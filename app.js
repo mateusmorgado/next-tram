@@ -25,6 +25,8 @@ let selectedId = null;
 let loading = false;
 let fetchToken = 0;
 let refreshTimer = null;
+let lastPlan = null;
+let swiped = false;
 
 function clone(v) {
   return JSON.parse(JSON.stringify(v));
@@ -53,7 +55,10 @@ const activeRoute = () => state.routes.find((r) => r.id === state.activeId) || s
 const $ = (id) => document.getElementById(id);
 const esc = (v) =>
   String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const badge = (c, size = '') => `<span class="badge ${esc(c.product)} ${size}">${esc(c.line)}</span>`;
+const badge = (c, size = '') => {
+  const style = c.color ? ` style="background:${esc(c.color.bg)};color:${esc(c.color.fg)}"` : '';
+  return `<span class="badge ${esc(c.product)} ${size}"${style}>${esc(c.line)}</span>`;
+};
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // ───────────────────────── Rendering ─────────────────────────
@@ -94,15 +99,64 @@ function render() {
   const slots = routeOptions(route, reversed).length;
   const plan = planTrips(connections, now, { selectedId, slots });
   if (selectedId && !plan.upcoming.some((c) => c.id === selectedId)) selectedId = null;
+  lastPlan = plan;
 
   renderTightNotice(plan, now);
-  renderHero(plan, now);
+  renderHero(plan, now, slots);
+  renderWatchNav(plan, now);
   renderCompare(plan, now, slots);
   renderUpcoming(plan, now);
   renderStatus(now);
 
   // When the shown tram leaves, fetch fresh data.
   if (lastFetch && !loading && plan.hero && plan.hero.depMs <= now + 1000) refresh();
+}
+
+/**
+ * Short stop mark: "Edlichstraße" → "Ed", "Torgauer Platz" → "TP", "S+U Warschauer Str." → "WS".
+ * Kept distinct between the route's stops by adding a letter when two would collide.
+ */
+function stopMonogram(name) {
+  const route = activeRoute();
+  const names = [...route.stops.map((s) => s.stop.name), route.dest.name].map(shortStopName);
+  const base = (n, len) => {
+    const words = shortStopName(n)
+      .replace(/^(S\+U|S|U)\s+/, '')
+      .split(/[\s\-/]+/)
+      .filter((w) => /^[A-Za-zÄÖÜäöüß]/.test(w));
+    if (words.length >= 2) return (words[0][0] + words[1].slice(0, len - 1)).replace(/^(.)(.*)$/, (m, a, b) => a.toUpperCase() + (len > 2 ? b.toLowerCase() : b.toUpperCase()));
+    const w = words[0] || n;
+    return w.slice(0, len).replace(/^./, (ch) => ch.toUpperCase());
+  };
+  const me = shortStopName(name);
+  for (let len = 2; len <= 4; len++) {
+    const mine = base(me, len);
+    if (!names.some((o) => o !== me && base(o, len) === mine)) return mine;
+  }
+  return base(me, 2);
+}
+
+/** Watch: step through catchable departures without opening the list. */
+function watchNeighbours(plan, now) {
+  const list = plan.upcoming.filter((c) => c.depMs - now >= c.walk * 60000);
+  const i = plan.hero ? list.findIndex((c) => c.id === plan.hero.id) : -1;
+  return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 ? list[i + 1] || null : null, index: i, total: list.length };
+}
+
+function renderWatchNav(plan, now) {
+  const { prev, next, index, total } = watchNeighbours(plan, now);
+  $('prevBtn').hidden = !prev;
+  $('nextBtn').hidden = !next;
+  $('watchPos').textContent = total > 1 && index >= 0 ? `${index + 1}/${total}` : '';
+}
+
+function stepTrip(dir) {
+  if (!lastPlan) return;
+  const n = watchNeighbours(lastPlan, Date.now());
+  const target = dir > 0 ? n.next : n.prev;
+  if (!target) return;
+  selectedId = target.id;
+  render();
 }
 
 function renderTightNotice(plan, now) {
@@ -117,7 +171,7 @@ function renderTightNotice(plan, now) {
   el.innerHTML = `<span>Earlier: <b>${esc(t.lineName)}</b> at ${esc(t.stopName)} in ${mins} min (${formatClock(t.depMs)}) is too tight for your ${t.walk} min walk.</span>`;
 }
 
-function renderHero(plan, now) {
+function renderHero(plan, now, slots) {
   const el = $('hero');
   const c = plan.hero;
   if (!c) {
@@ -144,15 +198,17 @@ function renderHero(plan, now) {
     leave = `<div class="leave now">🏃 Leave now<small>${plural(c.walk, 'min')} walk${advice.late ? ', hurry' : ''}</small></div>`;
   else
     leave = `<div class="leave">🚶 Leave in ${advice.minutes === 0 ? '< 1' : advice.minutes} min<small>${c.walk} min walk</small></div>`;
-  if (plan.manual) {
-    leave = leave.replace(/<small>.*<\/small>/, '<button class="link" type="button" id="autoBtn">Back to fastest</button>');
-  }
-
   const eyebrow = reversed ? `From ${esc(c.stopName)} to` : 'Go to stop';
-  const place = reversed ? esc(c.toName) : esc(c.stopName);
+  const placeName = reversed ? c.toName : c.stopName;
+  const place = esc(placeName);
+  const mark = slots > 1 ? `<span class="monogram" aria-hidden="true">${esc(stopMonogram(placeName))}</span>` : '';
+  const pick = plan.manual
+    ? `<span class="pick">Your pick · <button class="link" type="button" id="autoBtn">back to fastest</button></span>`
+    : eyebrow;
   el.innerHTML = `
     <div class="hero-main" id="heroMain" title="Tap to refresh">
-      <div class="hero-eyebrow">${plan.manual ? 'Tracking your pick · ' : ''}${eyebrow}</div>
+      ${mark}
+      <div class="hero-eyebrow">${pick}</div>
       <div class="hero-stop">${place}</div>
       <div class="hero-line">${badge(c, 'lg')}<span class="dir">→ ${esc(c.direction)}</span></div>
       <div class="hero-count">
@@ -572,6 +628,25 @@ function wire() {
     refresh();
   });
   $('refreshBtn').addEventListener('click', refresh);
+  $('nextBtn').addEventListener('click', () => stepTrip(1));
+  $('prevBtn').addEventListener('click', () => stepTrip(-1));
+  document.addEventListener('keydown', (e) => {
+    if ($('setupSheet').open || e.target.closest?.('input')) return;
+    if (e.key === 'ArrowRight') stepTrip(1);
+    if (e.key === 'ArrowLeft') stepTrip(-1);
+  });
+  // Swipe left/right on the countdown to step through trams.
+  let touchX = null;
+  $('hero').addEventListener('touchstart', (e) => (touchX = e.touches[0].clientX), { passive: true });
+  $('hero').addEventListener('touchend', (e) => {
+    if (touchX == null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    touchX = null;
+    if (Math.abs(dx) > 40) {
+      swiped = true;
+      stepTrip(dx < 0 ? 1 : -1);
+    }
+  });
   $('setupBtn').addEventListener('click', () => openSetup(state.activeId));
   $('themeBtn').addEventListener('click', toggleTheme);
   $('watchBtn').addEventListener('click', () => {
@@ -591,6 +666,10 @@ function wire() {
     if (e.target.closest('#autoBtn')) {
       selectedId = null;
       render();
+      return;
+    }
+    if (swiped) {
+      swiped = false;
       return;
     }
     if (e.target.closest('#heroMain') || (document.documentElement.classList.contains('watch') && e.target.closest('.hero'))) refresh();
