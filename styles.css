@@ -29,6 +29,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
+    --mono-alpha: 9%;
     --bg: #101114;
     --surface: #1a1b20;
     --surface-2: #24262c;
@@ -49,6 +50,7 @@
 }
 
 :root[data-theme='dark'] {
+  --mono-alpha: 9%;
   --bg: #101114;
   --surface: #1a1b20;
   --surface-2: #24262c;
@@ -175,7 +177,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .count-sec { font-size: 14px; color: var(--text-3); margin-left: 4px; }
 .times { text-align: right; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1.6; padding-bottom: 6px; }
 .times b { color: var(--text); font-weight: 600; }
-.delay { font-size: 12px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
+.delay { white-space: nowrap; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .delay.late { background: var(--now-soft); color: var(--now); }
 .delay.ok { background: var(--go-soft); color: var(--go); }
 .delay.plan { background: var(--surface-2); color: var(--text-3); }
@@ -400,7 +402,7 @@ main { display: grid; gap: 14px; }
   padding: 0 0.1em 0 0.05em;
   font-size: 112px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.05;
   pointer-events: none; user-select: none;
-  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--text) 9%, transparent) 70%);
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--text) var(--mono-alpha, 6%), transparent) 70%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 
