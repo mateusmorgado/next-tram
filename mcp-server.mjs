@@ -72,7 +72,7 @@ function buildRoute(args) {
     if (!args.from || !args.to) throw new Error('A custom trip needs both "from" and "to".');
     const stops = [{ stop: { name: args.from }, walk: args.from_walk_minutes ?? 2 }];
     if (args.from2) stops.push({ stop: { name: args.from2 }, walk: args.from2_walk_minutes ?? 4 });
-    return { id: 'custom', label: 'Custom', city: args.city || 'leipzig', stops, dest: { name: args.to }, destWalk: 0, modes: args.modes };
+    return { id: 'custom', label: 'Custom', city: args.city || 'leipzig', stops, dest: { name: args.to }, modes: args.modes };
   }
   const route = findRoute(args.route);
   if (!route) throw new Error(`Unknown route "${args.route}". Known: ${DEFAULT_ROUTES.map((r) => r.id).join(', ')}`);
