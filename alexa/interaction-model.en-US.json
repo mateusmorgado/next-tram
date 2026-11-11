@@ -30,8 +30,7 @@
           "name": "DESTINATION",
           "values": [
             { "id": "lej-hbf", "name": { "value": "Hbf", "synonyms": ["Hauptbahnhof", "main station", "central station"] } },
-            { "id": "lej-augustusplatz", "name": { "value": "Augustusplatz", "synonyms": ["Augustus Square", "the city centre"] } },
-            { "id": "ber-m10", "name": { "value": "Berlin M10", "synonyms": ["Eberswalder", "Berlin"] } }
+            { "id": "ber-strassmann", "name": { "value": "Straßmannstr.", "synonyms": ["Strassmann Street", "Berlin"] } }
           ]
         }
       ]

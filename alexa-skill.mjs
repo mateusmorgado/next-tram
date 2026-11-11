@@ -8,25 +8,30 @@
  * function, and set the handler to `alexa-skill.handler`. The voice model is in
  * alexa/interaction-model.en-US.json and alexa/interaction-model.de-DE.json.
  *
- * Optional env: NEXT_TRAM_ROUTE=<route id from lib/stops.js> (default: lej-hbf).
+ * Optional env:
+ *   NEXT_TRAM_CODE=<code from the app's AI screen>  answer for the user's own first favorite
+ *   NEXT_TRAM_ROUTE=<route id>                      pick another default route
  */
 
 import { DEFAULT_ROUTES } from './lib/stops.js';
+import { fetchRoutes } from './lib/favorites-sync.js';
 import { createTransitClient, fetchRoute, planTrips, describePlan, routeOptions } from './lib/transit.js';
 
 const client = createTransitClient({ timeoutMs: 6000, userAgent: 'NextTram-Alexa/2.0 (+https://github.com/mateusmorgado/next-tram)' });
 
-function pickRoute(slotValue) {
+async function pickRoute(slotValue) {
+  const own = process.env.NEXT_TRAM_CODE ? await fetchRoutes(process.env.NEXT_TRAM_CODE) : null;
+  const routes = own || DEFAULT_ROUTES;
   const wanted = String(slotValue || process.env.NEXT_TRAM_ROUTE || '').toLowerCase();
   return (
-    DEFAULT_ROUTES.find((r) => r.id === wanted || r.label.toLowerCase() === wanted || r.dest.name.toLowerCase() === wanted) ||
-    DEFAULT_ROUTES[0]
+    routes.find((r) => r.id.toLowerCase() === wanted || (r.label || '').toLowerCase() === wanted || r.dest.name.toLowerCase() === wanted) ||
+    routes[0]
   );
 }
 
 export async function nextTramSpeech({ locale = 'en-US', back = false, destination } = {}) {
   const lang = String(locale).startsWith('de') ? 'de' : 'en';
-  const route = pickRoute(destination);
+  const route = await pickRoute(destination);
   try {
     const now = Date.now();
     const { connections } = await fetchRoute(client, route, { reversed: back });
