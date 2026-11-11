@@ -7,6 +7,7 @@ import {
   minutesUntil,
   formatClock,
   shortStopName,
+  shortDirection,
   routeOptions,
   delayLabel,
   DELAY_BRACKETS,
@@ -107,7 +108,6 @@ function render() {
   if (selectedId && !plan.upcoming.some((c) => c.id === selectedId)) selectedId = null;
   lastPlan = plan;
 
-  renderTightNotice(plan, now);
   renderHero(plan, now, slots);
   renderWatchNav(plan, now);
   renderCompare(plan, now, slots);
@@ -174,18 +174,6 @@ function stepTrip(dir) {
   render();
 }
 
-function renderTightNotice(plan, now) {
-  const el = $('tightNotice');
-  const t = plan.tooTight;
-  if (!t) {
-    el.hidden = true;
-    return;
-  }
-  const mins = minutesUntil(t, now);
-  el.hidden = false;
-  el.innerHTML = `<span>Earlier: <b>${esc(t.lineName)}</b> at ${esc(t.stopName)} in ${mins} min (${formatClock(t.depMs)}) is too tight for your ${t.walk} min walk.</span>`;
-}
-
 function renderHero(plan, now, slots) {
   const el = $('hero');
   const c = plan.hero;
@@ -224,7 +212,7 @@ function renderHero(plan, now, slots) {
       ${mark}
       <div class="hero-eyebrow">${pick}</div>
       <div class="hero-stop">${place}</div>
-      <div class="hero-line">${badge(c, 'lg')}<span class="dir">→ ${esc(c.direction)}</span></div>
+      <div class="hero-line">${badge(c, 'lg')}<span class="dir" title="${esc(c.direction)}">→ ${esc(shortDirection(c.direction))}</span></div>
       <div class="hero-count">
         <div class="count" aria-label="${mins} minutes">
           <span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>
@@ -288,7 +276,7 @@ function renderUpcoming(plan, now) {
       return `<li><button class="trip ${tight ? 'tight' : ''} ${selected ? 'selected' : ''}" type="button" data-trip="${esc(c.id)}">
         <span class="t">${formatClock(c.depMs)}</span>
         ${badge(c)}
-        <span class="info"><span class="dir">${esc(c.direction)}</span><span class="sub">${chip}${esc(sub)}</span></span>
+        <span class="info"><span class="dir" title="${esc(c.direction)}">${esc(shortDirection(c.direction))}</span><span class="sub">${chip}${esc(sub)}</span></span>
         <span class="in">${tight ? 'too tight' : `${minutesUntil(c, now)} min`}</span>
       </button></li>`;
     })
@@ -413,7 +401,6 @@ function resetData() {
   $('hero').innerHTML = '<div class="hero-skeleton"><div class="sk sk-line"></div><div class="sk sk-big"></div><div class="sk sk-line short"></div></div>';
   $('compare').hidden = true;
   $('upcomingSection').hidden = true;
-  $('tightNotice').hidden = true;
   $('errorNotice').hidden = true;
 }
 

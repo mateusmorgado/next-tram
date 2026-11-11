@@ -403,12 +403,10 @@ html.watch .leave small, html.watch .leave .link { display: none; }
 .rt-short { display: none; }
 html.watch .rt-full { display: none; }
 html.watch .rt-short { display: inline; }
-html.watch #tightNotice { display: none !important; }
 html.watch .topbar { z-index: 2; }
 @media (max-width: 380px) {
   html:not(.no-watch) .rt-full { display: none; }
   html:not(.no-watch) .rt-short { display: inline; }
-  html:not(.no-watch) #tightNotice { display: none !important; }
   html:not(.no-watch) .swap-btn { width: 30px; height: 30px; }
   html:not(.no-watch) .count-num { font-size: 56px; }
   html:not(.no-watch) .count-sec,

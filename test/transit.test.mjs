@@ -239,3 +239,16 @@ test('delayLabel brackets', async () => {
   const k = (d) => delayLabel(d).label;
   assert.deepEqual([-3, -1, 0, 0.4, 1, 3, 4, 7, 8, 25].map(k), ['early', 'early', 'on time', 'on time', 'late', 'late', '+late', '+late', '++late', '++late']);
 });
+
+test('shortDirection abbreviates long directions like a departure board', async () => {
+  const { shortDirection: f } = await import('../lib/transit.js');
+  assert.equal(f('Leipzig, Böhlitz-Ehrenberg'), 'Böhlitz-E.');
+  assert.equal(f('Knautkleeberg'), 'Knautkleeberg');
+  assert.equal(f('Grünau-Nord'), 'Grünau-Nord');
+  assert.equal(f('Markkleeberg-West'), 'Markkleeberg-W.');
+  assert.equal(f('S+U Hauptbahnhof'), 'S+U Hbf');
+  assert.equal(f('Schönefeld, Ost'), 'Schönefeld O.');
+  assert.equal(f('Lützschena, Am Wasserturm'), 'Lützschena');
+  assert.equal(f('S Schöneweide/Sterndamm'), 'S Schöneweide');
+  assert.ok(f('Universitätsklinikum').length <= 16);
+});
