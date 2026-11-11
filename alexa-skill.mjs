@@ -4,7 +4,10 @@
  * "Alexa, ask Next Tram when the next tram is."
  * "Alexa, frag Nächste Bahn, wann die nächste Bahn kommt."
  *
- * Deploy: zip `alexa-skill.mjs` together with the `lib/` folder, upload it to a Lambda
+ * Easiest: no Lambda at all. Point the skill's HTTPS endpoint at
+ * https://app.nexttram.morgado.tech/api/alexa?code=<code> (api/alexa.js runs this same handler).
+ *
+ * Or deploy it yourself: zip `alexa-skill.mjs` together with the `lib/` folder, upload it to a Lambda
  * function, and set the handler to `alexa-skill.handler`. The voice model is in
  * alexa/interaction-model.en-US.json and alexa/interaction-model.de-DE.json.
  *
@@ -19,19 +22,21 @@ import { createTransitClient, fetchRoute, planTrips, describePlan, routeOptions 
 
 const client = createTransitClient({ timeoutMs: 6000, userAgent: 'NextTram-Alexa/2.0 (+https://github.com/mateusmorgado/next-tram)' });
 
-async function pickRoute(slotValue) {
-  const own = process.env.NEXT_TRAM_CODE ? await fetchRoutes(process.env.NEXT_TRAM_CODE) : null;
+const envOptions = () => ({ code: process.env.NEXT_TRAM_CODE, defaultRoute: process.env.NEXT_TRAM_ROUTE });
+
+async function pickRoute(slotValue, { code, defaultRoute, loadFavorites = (c) => fetchRoutes(c) } = {}) {
+  const own = code ? await loadFavorites(code).catch(() => null) : null;
   const routes = own || DEFAULT_ROUTES;
-  const wanted = String(slotValue || process.env.NEXT_TRAM_ROUTE || '').toLowerCase();
+  const wanted = String(slotValue || defaultRoute || '').toLowerCase();
   return (
     routes.find((r) => r.id.toLowerCase() === wanted || (r.label || '').toLowerCase() === wanted || r.dest.name.toLowerCase() === wanted) ||
     routes[0]
   );
 }
 
-export async function nextTramSpeech({ locale = 'en-US', back = false, destination } = {}) {
+export async function nextTramSpeech({ locale = 'en-US', back = false, destination } = {}, options = envOptions()) {
   const lang = String(locale).startsWith('de') ? 'de' : 'en';
-  const route = await pickRoute(destination);
+  const route = await pickRoute(destination, options);
   try {
     const now = Date.now();
     const { connections } = await fetchRoute(client, route, { reversed: back });
@@ -60,24 +65,28 @@ function slotId(slot) {
   return match?.values?.[0]?.value?.id || slot?.value;
 }
 
-export async function handler(event) {
+/**
+ * The skill's answer to one Alexa request. options: { code, defaultRoute, loadFavorites };
+ * on Lambda they come from the environment, online (api/alexa.js) from the link.
+ */
+export async function handler(event, _context, options = envOptions()) {
   const req = event?.request || {};
   const locale = req.locale || 'en-US';
   const de = locale.startsWith('de');
 
   if (req.type === 'SessionEndedRequest') return { version: '1.0', response: {} };
 
-  if (req.type === 'LaunchRequest') return speak(await nextTramSpeech({ locale }));
+  if (req.type === 'LaunchRequest') return speak(await nextTramSpeech({ locale }, options));
 
   if (req.type === 'IntentRequest') {
     const name = req.intent?.name;
     const slots = req.intent?.slots || {};
     const dest = slotId(slots.destination);
     if (name === 'NextTramIntent') {
-      return speak(await nextTramSpeech({ locale, destination: dest }));
+      return speak(await nextTramSpeech({ locale, destination: dest }, options));
     }
     if (name === 'TripBackIntent') {
-      return speak(await nextTramSpeech({ locale, back: true, destination: dest }));
+      return speak(await nextTramSpeech({ locale, back: true, destination: dest }, options));
     }
     if (name === 'AMAZON.HelpIntent') {
       return speak(

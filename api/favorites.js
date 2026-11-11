@@ -5,18 +5,8 @@
  * The code is the only key: whoever knows it can read and replace that list.
  * Only route fields (stop names, coordinates, walk times) are stored.
  */
-import { createRedisStore, isValidCode, normalizeCode, sanitizeRoutes } from '../lib/favorites-sync.js';
-
-// Vercel's Upstash integration names the variables after the prefix chosen at install (KV, STORAGE, …).
-const env = (suffix) => {
-  for (const k of [`KV_${suffix}`, `STORAGE_KV_${suffix}`, `STORAGE_${suffix}`]) if (process.env[k]) return process.env[k];
-  const any = Object.keys(process.env).find((k) => k.endsWith(`_${suffix}`) && !k.includes('READ_ONLY'));
-  return any ? process.env[any] : undefined;
-};
-const store = createRedisStore({
-  url: env('REST_API_URL') || process.env.UPSTASH_REDIS_REST_URL,
-  token: env('REST_API_TOKEN') || process.env.UPSTASH_REDIS_REST_TOKEN,
-});
+import { isValidCode, normalizeCode, sanitizeRoutes } from '../lib/favorites-sync.js';
+import { store } from './_store.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');

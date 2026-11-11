@@ -34,7 +34,7 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="icon-btn ai-btn" id="aiBtn" type="button" aria-label="Connect an assistant" title="Assistants">AI</button>
+        <button class="icon-btn ai-btn" id="aiBtn" type="button" aria-label="Add NextTram to your assistant" title="Add to your assistant">AI</button>
         <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme" title="Theme">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>
         </button>
@@ -116,14 +116,7 @@
 
   <dialog class="info-pop ai-pop" id="aiInfo" aria-labelledby="aiInfoTitle">
     <form method="dialog">
-      <h2 id="aiInfoTitle">Ask an assistant</h2>
-      <p class="hint">Assistants only answer for your first favorite: <b id="aiFirst"></b>. To change it, make another route your first favorite.</p>
-      <div class="ai-code">
-        <span class="field-label">Your code</span>
-        <span class="ai-link"><code id="aiCode"></code><button type="button" class="text-btn" id="aiCodeCopy" data-copy="">Copy</button></span>
-        <p class="hint">Your favorites are saved online under this code, so assistants can read them. Keep it to yourself.</p>
-      </div>
-      <ul class="ai-list" id="aiList"></ul>
+      <div id="aiBody"></div>
       <button class="btn btn-primary" value="ok" type="submit">Done</button>
     </form>
   </dialog>
