@@ -198,7 +198,7 @@ test('fetchRoute queries both stops in parallel and falls back to HAFAS', async 
 
 test('fetchRoute throws when every stop fails', async () => {
   const client = createTransitClient({ fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) }) });
-  await assert.rejects(fetchRoute(client, DEFAULT_ROUTES[2]), /HTTP 500/);
+  await assert.rejects(fetchRoute(client, DEFAULT_ROUTES[1]), /HTTP 500/);
 });
 
 test('nearbyStops works when transport.rest is down, nearest first, one per name', async () => {

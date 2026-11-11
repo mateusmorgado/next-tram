@@ -34,6 +34,7 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <button class="icon-btn ai-btn" id="aiBtn" type="button" aria-label="Connect an assistant" title="Assistants">AI</button>
         <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme" title="Theme">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>
         </button>
@@ -98,6 +99,15 @@
       <p class="hint">Live data compared with the timetable.</p>
       <ul class="delay-info" id="delayInfoList"></ul>
       <button class="btn btn-primary" value="ok" type="submit">Got it</button>
+    </form>
+  </dialog>
+
+  <dialog class="info-pop ai-pop" id="aiInfo" aria-labelledby="aiInfoTitle">
+    <form method="dialog">
+      <h2 id="aiInfoTitle">Ask an assistant</h2>
+      <p class="hint">Assistants only answer for your first favorite: <b id="aiFirst"></b>. To change it, make another route your first favorite.</p>
+      <ul class="ai-list" id="aiList"></ul>
+      <button class="btn btn-primary" value="ok" type="submit">Done</button>
     </form>
   </dialog>
 

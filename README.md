@@ -51,8 +51,7 @@ Three routes are built in (see [`lib/stops.js`](lib/stops.js)):
 | id | route |
 |---|---|
 | `lej-hbf` | Edlichstraße / Torgauer Platz → Leipzig Hauptbahnhof |
-| `lej-augustusplatz` | Edlichstraße / Torgauer Platz → Augustusplatz |
-| `ber-m10` | S+U Warschauer Str. → U Eberswalder Str. (Berlin) |
+| `ber-strassmann` | Straßmannstr. → U Eberswalder Str. (Berlin) |
 
 Tap the active chip (or the sliders icon) to edit a route, **+ New** to add one. Your routes are stored only in the browser (`localStorage`).
 
@@ -69,7 +68,7 @@ Tap the active chip (or the sliders icon) to edit a route, **+ New** to add one.
 }
 ```
 
-Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom `from`/`from2`/`to`, `language: "de"`), `search_stops`, `list_routes`. Set `NEXT_TRAM_ROUTE=lej-augustusplatz` to change the default.
+Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom `from`/`from2`/`to`, `language: "de"`), `search_stops`, `list_routes`. Set `NEXT_TRAM_ROUTE=ber-strassmann` to change the default.
 
 ## Alexa skill
 
