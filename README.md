@@ -40,7 +40,7 @@ npm start          # http://localhost:8080
 npm test           # unit tests for the transit logic and the Alexa handler
 ```
 
-To install it on Android it must be served over HTTPS (GitHub Pages, Netlify, Vercel, …). Open the URL in Chrome → menu → **Install app**. Long-press the home-screen icon for shortcuts straight to a route (`?route=lej-hbf`, `?route=lej-hbf&back=1`).
+To install it on Android it must be served over HTTPS. It is deployed on **Vercel**: every push to `main` goes live, and every pull request gets its own preview URL. `vercel.json` serves it as plain static files (no build) and keeps the service worker and manifest uncached so updates show up right away; `.vercelignore` leaves the MCP server, Alexa skill, tests and docs out of the deployment. Open the URL in Chrome → menu → **Install app**. Long-press the home-screen icon for shortcuts straight to a route (`?route=lej-hbf`, `?route=lej-hbf&back=1`).
 
 **Watch:** on screens 380 px wide or less (Wear OS browsers) the app switches to a round, glanceable layout automatically. Tap the route name to cycle favorites, tap the countdown to refresh. The ⌚ button previews it on a phone or desktop.
 
