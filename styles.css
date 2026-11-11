@@ -211,6 +211,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .ai-list li > span { min-width: 0; }
 .ai-list li.soon { opacity: 0.55; }
 .ai-name { color: var(--text); font-size: 15px; }
+.ai-code { display: grid; gap: 4px; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.ai-code code { letter-spacing: 0.08em; font-size: 14px; background: var(--surface); }
+.ai-code .hint { margin: 0; font-size: 12px; }
+.ai-list code { font-size: 12px; }
 .ai-link { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .ai-link code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); }
 

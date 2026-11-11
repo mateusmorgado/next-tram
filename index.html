@@ -106,6 +106,11 @@
     <form method="dialog">
       <h2 id="aiInfoTitle">Ask an assistant</h2>
       <p class="hint">Assistants only answer for your first favorite: <b id="aiFirst"></b>. To change it, make another route your first favorite.</p>
+      <div class="ai-code">
+        <span class="field-label">Your code</span>
+        <span class="ai-link"><code id="aiCode"></code><button type="button" class="text-btn" id="aiCodeCopy" data-copy="">Copy</button></span>
+        <p class="hint">Your favorites are saved online under this code, so assistants can read them. Keep it to yourself.</p>
+      </div>
       <ul class="ai-list" id="aiList"></ul>
       <button class="btn btn-primary" value="ok" type="submit">Done</button>
     </form>

@@ -1,4 +1,5 @@
 import { CITIES, DEFAULT_ROUTES, DEFAULT_MODE_FILTER, DEFAULTS_VERSION, RETIRED_DEFAULTS } from './lib/stops.js';
+import { newCode, isValidCode, formatCode, pushRoutes } from './lib/favorites-sync.js';
 import {
   createTransitClient,
   fetchRoute,
@@ -61,13 +62,29 @@ function loadState() {
   }
   const activeId = routes.some((r) => r.id === saved.activeId) ? saved.activeId : routes[0].id;
   const mark = MARKS.includes(saved.mark) ? saved.mark : 'stop';
-  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION };
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '' };
 }
 
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {}
+  scheduleSync();
+}
+
+// Favorites go online under state.syncCode so Claude, ChatGPT, Gemini and Alexa answer for the first one.
+let syncTimer = 0;
+function scheduleSync() {
+  const snapshot = JSON.stringify(state.routes);
+  if (snapshot === state.synced) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    try {
+      await pushRoutes(state.syncCode, state.routes);
+      state.synced = snapshot;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {} // offline or storage not set up yet: try again on the next save or start
+  }, 1500);
 }
 
 const activeRoute = () => state.routes.find((r) => r.id === state.activeId) || state.routes[0];
@@ -403,10 +420,10 @@ function openDelayInfo() {
 const APP_URL = 'https://next-tram-gray.vercel.app';
 const ASSISTANTS = [
   { key: 'siri', name: 'Siri', how: (r) => `In <b>Shortcuts</b>: + → <b>Open URLs</b> → paste the link below → name it <b>Next Tram</b>. Then say "Hey Siri, Next Tram", also on the Apple Watch.`, link: true },
-  { key: 'claude', name: 'Claude', how: () => `Add the NextTram MCP server in Claude Desktop (Settings → Developer → Edit config). Then ask "when is my next tram?".` },
-  { key: 'chatgpt', name: 'ChatGPT', how: () => `Uses the same MCP server, added as a connector where your ChatGPT plan allows it.` },
-  { key: 'gemini', name: 'Gemini', how: () => `Uses the same MCP server, from Gemini CLI or any MCP client.` },
-  { key: 'alexa', name: 'Alexa', how: () => `Install the NextTram skill, then say "Alexa, ask Next Tram when the next tram is".` },
+  { key: 'claude', name: 'Claude', how: () => `Add the NextTram MCP server in Claude Desktop (Settings → Developer → Edit config) with <code>NEXT_TRAM_CODE</code> set to your code. Then ask "when is my next tram?".` },
+  { key: 'chatgpt', name: 'ChatGPT', how: () => `Uses the same MCP server and code, added as a connector where your ChatGPT plan allows it.` },
+  { key: 'gemini', name: 'Gemini', how: () => `Uses the same MCP server and code, from Gemini CLI or any MCP client.` },
+  { key: 'alexa', name: 'Alexa', how: () => `Set <code>NEXT_TRAM_CODE</code> on the skill to your code, then say "Alexa, ask Next Tram when the next tram is".` },
   { key: 'google', name: 'Google Assistant', how: () => `Coming soon.`, soon: true },
 ];
 
@@ -414,6 +431,10 @@ function openAssistants() {
   const first = state.routes[0];
   const url = `${APP_URL}/?route=${encodeURIComponent(first.id)}`;
   $('aiFirst').textContent = first.label || first.dest?.name || 'your first favorite';
+  $('aiCode').textContent = formatCode(state.syncCode);
+  $('aiCodeCopy').dataset.copy = state.syncCode;
+  $('aiCodeCopy').textContent = 'Copy';
+  scheduleSync();
   $('aiList').innerHTML = ASSISTANTS.map(
     (a) => `<li class="${a.soon ? 'soon' : ''}"><b class="ai-name">${esc(a.name)}</b><span>${a.how(first)}${
       a.link ? `<span class="ai-link"><code>${esc(url)}</code><button type="button" class="text-btn" data-copy="${esc(url)}">Copy</button></span>` : ''
@@ -857,7 +878,7 @@ function wire() {
   $('setupBtn').addEventListener('click', () => openSetup(state.activeId));
   $('themeBtn').addEventListener('click', toggleTheme);
   $('aiBtn').addEventListener('click', openAssistants);
-  $('aiList').addEventListener('click', async (e) => {
+  $('aiInfo').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-copy]');
     if (!b) return;
     try {
@@ -983,6 +1004,7 @@ function init() {
   refresh();
   scheduleRefresh();
   setInterval(render, 1000);
+  scheduleSync();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});

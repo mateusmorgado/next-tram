@@ -10,11 +10,14 @@
  * Claude Desktop / Claude Code config:
  *   { "mcpServers": { "next-tram": { "command": "node", "args": ["/path/to/next-tram/mcp-server.mjs"] } } }
  *
- * Optional env: NEXT_TRAM_ROUTE=<route id> picks the default route (see lib/stops.js).
+ * Optional env:
+ *   NEXT_TRAM_CODE=<code from the app's AI screen>  answer for the user's own favorites (first one by default)
+ *   NEXT_TRAM_ROUTE=<route id>                      pick another default route
  */
 
 import readline from 'node:readline';
 import { DEFAULT_ROUTES, CITIES } from './lib/stops.js';
+import { fetchRoutes } from './lib/favorites-sync.js';
 import { createTransitClient, fetchRoute, planTrips, describePlan, formatClock, routeOptions } from './lib/transit.js';
 
 const client = createTransitClient({ userAgent: 'NextTram-MCP/2.0 (+https://github.com/mateusmorgado/next-tram)' });
@@ -24,11 +27,11 @@ const TOOLS = [
   {
     name: 'get_next_tram',
     description:
-      'Answer "when is the next tram?": checks the user\'s home stops in parallel, skips trams they cannot reach in time (walk time), and says which stop to walk to and when to leave. With no arguments it uses the default route (Edlichstraße / Torgauer Platz → Leipzig Hauptbahnhof).',
+      'Answer "when is the next tram?": checks the user\'s home stops in parallel, skips trams they cannot reach in time (walk time), and says which stop to walk to and when to leave. With no arguments it uses the user\'s first favorite route from the NextTram app.',
     inputSchema: {
       type: 'object',
       properties: {
-        route: { type: 'string', description: `Favorite route id or name: ${DEFAULT_ROUTES.map((r) => `${r.id} (${r.label})`).join(', ')}` },
+        route: { type: 'string', description: 'Favorite route id or name (see list_routes). Leave out for the first favorite.' },
         back: { type: 'boolean', description: 'Trip back: from the destination to the home stops.' },
         city: { type: 'string', enum: Object.keys(CITIES), description: 'City for a custom trip (default leipzig).' },
         from: { type: 'string', description: 'Custom trip: first stop near the user, e.g. "Edlichstraße".' },
@@ -55,32 +58,41 @@ const TOOLS = [
   },
   {
     name: 'list_routes',
-    description: 'List the built-in favorite routes.',
+    description: "List the user's favorite routes (the first one is the default).",
     inputSchema: { type: 'object', properties: {} },
   },
 ];
 
-function findRoute(key) {
-  const wanted = key || process.env.NEXT_TRAM_ROUTE;
-  if (!wanted) return DEFAULT_ROUTES[0];
-  const k = String(wanted).toLowerCase();
-  return DEFAULT_ROUTES.find((r) => r.id === k || r.label.toLowerCase() === k) || null;
+/** The user's favorites from the app (via NEXT_TRAM_CODE), else the built-in ones. Refreshed at most once a minute. */
+let favCache = { at: 0, routes: null };
+async function favorites() {
+  if (!process.env.NEXT_TRAM_CODE) return DEFAULT_ROUTES;
+  if (Date.now() - favCache.at > 60000) favCache = { at: Date.now(), routes: await fetchRoutes(process.env.NEXT_TRAM_CODE) };
+  return favCache.routes || DEFAULT_ROUTES;
 }
 
-function buildRoute(args) {
+async function findRoute(key) {
+  const routes = await favorites();
+  const wanted = key || process.env.NEXT_TRAM_ROUTE;
+  if (!wanted) return routes[0];
+  const k = String(wanted).toLowerCase();
+  return routes.find((r) => r.id.toLowerCase() === k || (r.label || '').toLowerCase() === k || r.dest.name.toLowerCase() === k) || null;
+}
+
+async function buildRoute(args) {
   if (args.from || args.to) {
     if (!args.from || !args.to) throw new Error('A custom trip needs both "from" and "to".');
     const stops = [{ stop: { name: args.from }, walk: args.from_walk_minutes ?? 2 }];
     if (args.from2) stops.push({ stop: { name: args.from2 }, walk: args.from2_walk_minutes ?? 4 });
     return { id: 'custom', label: 'Custom', city: args.city || 'leipzig', stops, dest: { name: args.to }, modes: args.modes };
   }
-  const route = findRoute(args.route);
-  if (!route) throw new Error(`Unknown route "${args.route}". Known: ${DEFAULT_ROUTES.map((r) => r.id).join(', ')}`);
+  const route = await findRoute(args.route);
+  if (!route) throw new Error(`Unknown route "${args.route}". Known: ${(await favorites()).map((r) => r.id).join(', ')}`);
   return args.modes ? { ...route, modes: args.modes } : route;
 }
 
 async function getNextTram(args = {}) {
-  const route = buildRoute(args);
+  const route = await buildRoute(args);
   const reversed = Boolean(args.back);
   const now = Date.now();
   const { connections, errors } = await fetchRoute(client, route, { reversed });
@@ -113,10 +125,10 @@ async function searchStops({ query, city = 'leipzig' }) {
   return stops.map((s) => `- ${s.name}`).join('\n');
 }
 
-function listRoutes() {
-  return DEFAULT_ROUTES.map((r) => {
+async function listRoutes() {
+  return (await favorites()).map((r) => {
     const homes = r.stops.map((s) => `${s.stop.name} (${s.walk} min walk)`).join(' or ');
-    return `- ${r.id}: ${homes} → ${r.dest.name} [${CITIES[r.city].label}]`;
+    return `- ${r.id}${r.label ? ` (${r.label})` : ''}: ${homes} → ${r.dest.name} [${CITIES[r.city]?.label || r.city}]`;
   }).join('\n');
 }
 

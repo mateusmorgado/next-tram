@@ -55,6 +55,12 @@ Three routes are built in (see [`lib/stops.js`](lib/stops.js)):
 
 Tap the active chip (or the sliders icon) to edit a route, **+ New** to add one. Your routes are stored only in the browser (`localStorage`).
 
+## Assistants follow your first favorite
+
+The app saves your favorites online under a personal code (tap **AI** in the app to see it). Give that code to the MCP server or the Alexa skill as `NEXT_TRAM_CODE`, and they answer for your first favorite. Without a code they use the built-in routes.
+
+Storage is Upstash Redis on the Vercel project: Vercel → Storage → **Upstash for Redis** → connect it to `next-tram`. That sets `KV_REST_API_URL`/`KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`), which `api/favorites.js` reads. Whoever knows a code can read and replace that list; only stop names, coordinates and walk times are stored.
+
 ## MCP server (Claude)
 
 ```json
@@ -62,7 +68,8 @@ Tap the active chip (or the sliders icon) to edit a route, **+ New** to add one.
   "mcpServers": {
     "next-tram": {
       "command": "node",
-      "args": ["C:/Users/mateu/Documents/projects/next-tram/mcp-server.mjs"]
+      "args": ["C:/Users/mateu/Documents/projects/next-tram/mcp-server.mjs"],
+      "env": { "NEXT_TRAM_CODE": "your-code-from-the-app" }
     }
   }
 }
