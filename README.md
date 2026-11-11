@@ -1,5 +1,14 @@
 # NextTram
 
+<p align="center">
+  <img src="docs/screenshots/phone-dark.png" alt="NextTram on a phone, dark mode: go to Torgauer Platz, Tram 3 in 6 minutes, leave in 2 minutes" width="260">
+  &nbsp;
+  <img src="docs/screenshots/phone-light.png" alt="NextTram on a phone, light mode, with the stop comparison and upcoming departures" width="260">
+  &nbsp;
+  <img src="docs/screenshots/watch.png" alt="NextTram watch view: round face with the countdown and a next-tram button" width="260">
+</p>
+<p align="center"><sub>Phone (dark and light) and watch view. The screenshots use sample departures.</sub></p>
+
 **"When is the next tram?"** answered with zero friction: which of your nearby stops to walk to, which tram you can still catch, and when to leave the house.
 
 Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backend, no database, no API keys. It comes as:
