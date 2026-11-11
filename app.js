@@ -53,7 +53,10 @@ const activeRoute = () => state.routes.find((r) => r.id === state.activeId) || s
 const $ = (id) => document.getElementById(id);
 const esc = (v) =>
   String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const badge = (c, size = '') => `<span class="badge ${esc(c.product)} ${size}">${esc(c.line)}</span>`;
+const badge = (c, size = '') => {
+  const style = c.color ? ` style="background:${esc(c.color.bg)};color:${esc(c.color.fg)}"` : '';
+  return `<span class="badge ${esc(c.product)} ${size}"${style}>${esc(c.line)}</span>`;
+};
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // ───────────────────────── Rendering ─────────────────────────
