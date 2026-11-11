@@ -172,7 +172,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .hero-line .dir { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hero-count { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-top: 6px; }
 .count { display: flex; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; border: 0; background: none; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.count-num.timer-sec { font-size: 52px; color: var(--text-2); margin-left: 4px; } /* "16m 19s" so the timer can't be read as a clock time */
+.count.timer .timer-text { font-size: 0.82em; } /* smaller digits, same line box: the card keeps its height */
 .count-num { font-size: 88px; font-weight: 750; line-height: 0.95; letter-spacing: -0.04em; }
 .count-unit { font-size: 22px; font-weight: 600; color: var(--text-2); }
 .count-sec { font-size: 14px; color: var(--text-3); margin-left: 4px; }
@@ -490,9 +490,4 @@ html.watch .hero-main .monogram { top: -125px; transform: translate(50%, 0); }
   html:not(.no-watch) .watch-pos { display: none !important; }
   html:not(.no-watch) .hero, html:not(.no-watch) .hero-main { overflow: visible; }
   html:not(.no-watch) .monogram { top: -110px; transform: translate(50%, 0); }
-}
-/* Timer seconds stay smaller than the minutes on the watch too */
-html.watch .count-num.timer-sec { font-size: 38px; }
-@media (max-width: 380px) {
-  html:not(.no-watch) .count-num.timer-sec { font-size: 34px; }
 }
