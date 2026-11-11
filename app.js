@@ -183,8 +183,11 @@ function fitMonogram() {
     ink = { top: baseline - m.actualBoundingBoxAscent, right: parseFloat(cs.paddingLeft) + m.actualBoundingBoxRight };
     inkCache.set(key, ink);
   }
-  el.style.top = `${-ink.top}px`;
-  el.style.right = `${-(el.offsetWidth - ink.right)}px`;
+  // Overshoot the corner a little so the card's border clips the letters: no sliver of gap on any font.
+  const bleed = parseFloat(cs.fontSize) * 0.07;
+  const bleedTop = parseFloat(cs.fontSize) * 0.015; // just past the edge, so the top bar of a T stays full
+  el.style.top = `${-ink.top - bleedTop}px`;
+  el.style.right = `${-(el.offsetWidth - ink.right) - bleed}px`;
 }
 
 function heroMark(c, placeName, slots) {
@@ -279,7 +282,7 @@ function renderHero(plan, now, slots) {
         <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${plural(mins, 'minute')}. Tap to switch between minutes and timer">
           ${
             state.countdown
-              ? `<span class="count-num">${mins}</span><span class="count-unit">m</span><span class="count-num timer-sec" data-tick="ss"></span><span class="count-unit">s</span>`
+              ? `<span class="count-num"><span class="timer-text" data-tick="clock"></span></span><span class="count-unit" aria-hidden="true">&#8203;</span>`
               : `<span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec" data-tick="clock"></span>`
           }
         </button>
