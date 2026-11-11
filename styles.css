@@ -178,8 +178,29 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .times { text-align: right; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1.6; padding-bottom: 6px; }
 .times b { color: var(--text); font-weight: 600; }
 .delay { white-space: nowrap; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
+.delay[data-delay-info] { cursor: pointer; }
+.delay.sm { font-size: 11px; padding: 0 5px; margin-right: 6px; }
+.delay.ontime { background: var(--go-soft); color: var(--go); }
+/* Early is the risky one (you can miss it), so it gets its own yellow. */
+.delay.early { background: #fff1b8; color: #7a5a00; }
 .delay.late { background: var(--now-soft); color: var(--now); }
-.delay.ok { background: var(--go-soft); color: var(--go); }
+.delay.late2 { background: color-mix(in srgb, var(--now) 28%, var(--now-soft)); color: var(--now); }
+.delay.late3 { background: var(--now); color: #fff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .delay.early { background: #3d3410; color: #ffd84d; } }
+:root[data-theme='dark'] .delay.early { background: #3d3410; color: #ffd84d; }
+
+.trip-list.scrolls { overflow-y: auto; overscroll-behavior: contain; }
+.info-pop {
+  border: 0; border-radius: 18px; padding: 20px; width: min(360px, calc(100vw - 32px));
+  background: var(--surface); color: var(--text); box-shadow: 0 20px 50px rgb(0 0 0 / 0.25);
+}
+.info-pop::backdrop { background: rgb(0 0 0 / 0.4); }
+.info-pop h2 { margin: 0 0 4px; font-size: 18px; }
+.info-pop form { display: grid; gap: 12px; }
+.info-pop .btn { justify-self: end; }
+.delay-info { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.delay-info li { display: grid; grid-template-columns: 76px 1fr; gap: 10px; align-items: start; font-size: 14px; color: var(--text-2); }
+.delay-info .delay { justify-self: start; }
 .delay.plan { background: var(--surface-2); color: var(--text-3); }
 
 .leave {

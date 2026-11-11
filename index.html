@@ -93,6 +93,15 @@
     </footer>
   </div>
 
+  <dialog class="info-pop" id="delayInfo" aria-labelledby="delayInfoTitle">
+    <form method="dialog">
+      <h2 id="delayInfoTitle">How punctual is it?</h2>
+      <p class="hint">Live data compared with the timetable.</p>
+      <ul class="delay-info" id="delayInfoList"></ul>
+      <button class="btn btn-primary" value="ok" type="submit">Got it</button>
+    </form>
+  </dialog>
+
   <dialog class="sheet" id="setupSheet" aria-labelledby="setupTitle">
     <form method="dialog" class="sheet-body" id="setupForm" autocomplete="off">
       <div class="sheet-head">

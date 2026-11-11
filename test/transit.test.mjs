@@ -233,3 +233,9 @@ test('nearbyStops falls back to reverse-geocode', async () => {
   const near = await createTransitClient({ fetchImpl }).nearbyStops('leipzig', 51.3449, 12.4152);
   assert.equal(near[0].name, 'Edlichstraße');
 });
+
+test('delayLabel brackets', async () => {
+  const { delayLabel } = await import('../lib/transit.js');
+  const k = (d) => delayLabel(d).label;
+  assert.deepEqual([-3, -1, 0, 0.4, 1, 3, 4, 7, 8, 25].map(k), ['early', 'early', 'on time', 'on time', 'late', 'late', '+late', '+late', '++late', '++late']);
+});

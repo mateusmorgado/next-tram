@@ -8,10 +8,13 @@ import {
   formatClock,
   shortStopName,
   routeOptions,
+  delayLabel,
+  DELAY_BRACKETS,
 } from './lib/transit.js';
 
 const STORAGE_KEY = 'nexttram:v1';
 const REFRESH_MS = 60_000;
+const MAX_UPCOMING = 7;
 const client = createTransitClient();
 /** What the big faint mark in the card's corner shows: stop initials (Ed/TP), the line number, or nothing. */
 const MARKS = ['stop', 'line', 'none'];
@@ -200,9 +203,7 @@ function renderHero(plan, now, slots) {
 
   let delay = '';
   if (!c.realtime) delay = '<span class="delay plan">scheduled</span>';
-  else if (c.delayMin > 0) delay = `<span class="delay late">+${c.delayMin} min</span>`;
-  else if (c.delayMin < 0) delay = `<span class="delay ok">${c.delayMin} min</span>`;
-  else delay = '<span class="delay ok">on time</span>';
+  else delay = delayChip(c.delayMin);
 
   let leave;
   // No walk set for the trip back: you're already at the stop, so no leave advice at all.
@@ -279,18 +280,48 @@ function renderUpcoming(plan, now) {
       const sub = [
         multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '',
         c.arrMs ? `arr ${formatClock(c.arrMs)}` : '',
-        c.realtime && c.delayMin > 0 ? `+${c.delayMin}` : '',
       ]
         .filter(Boolean)
         .join(' · ');
+      const d = c.realtime ? delayLabel(c.delayMin) : null;
+      const chip = d && d.key !== 'ontime' ? delayChip(c.delayMin, 'sm') : '';
       return `<li><button class="trip ${tight ? 'tight' : ''} ${selected ? 'selected' : ''}" type="button" data-trip="${esc(c.id)}">
         <span class="t">${formatClock(c.depMs)}</span>
         ${badge(c)}
-        <span class="info"><span class="dir">${esc(c.direction)}</span><span class="sub">${esc(sub)}</span></span>
+        <span class="info"><span class="dir">${esc(c.direction)}</span><span class="sub">${chip}${esc(sub)}</span></span>
         <span class="in">${tight ? 'too tight' : `${minutesUntil(c, now)} min`}</span>
       </button></li>`;
     })
     .join('');
+  capUpcoming();
+}
+
+/** Cap the list at 7 visible rows; the rest scrolls inside it. */
+function capUpcoming() {
+  const list = $('tripList');
+  const rows = list.children;
+  if (rows.length <= MAX_UPCOMING) {
+    list.style.maxHeight = '';
+    list.classList.remove('scrolls');
+    return;
+  }
+  const last = rows[MAX_UPCOMING - 1];
+  // A sliver of the 8th row peeks out so it's clear the list scrolls.
+  const bottom = last.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop;
+  list.style.maxHeight = `${Math.round(bottom + 14)}px`;
+  list.classList.add('scrolls');
+}
+
+function delayChip(delayMin, size = '') {
+  const d = delayLabel(delayMin);
+  return `<span class="delay ${d.key} ${size}" role="button" tabindex="0" data-delay-info title="What does ${esc(d.label)} mean?">${esc(d.label)}</span>`;
+}
+
+function openDelayInfo() {
+  $('delayInfoList').innerHTML =
+    DELAY_BRACKETS.map((b) => `<li><span class="delay ${b.key}">${esc(b.label)}</span><span>${esc(b.text)}</span></li>`).join('') +
+    `<li><span class="delay plan">scheduled</span><span>No live data for this tram, only the timetable.</span></li>`;
+  $('delayInfo').showModal();
 }
 
 function renderStatus(now) {
@@ -686,6 +717,11 @@ function wire() {
   $('nextBtn').addEventListener('click', () => stepTrip(1));
   $('prevBtn').addEventListener('click', () => stepTrip(-1));
   document.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('[data-delay-info]')) {
+      e.preventDefault();
+      openDelayInfo();
+      return;
+    }
     if ($('setupSheet').open || e.target.closest?.('input')) return;
     if (e.key === 'ArrowRight') stepTrip(1);
     if (e.key === 'ArrowLeft') stepTrip(-1);
@@ -711,6 +747,11 @@ function wire() {
   });
 
   document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-delay-info]')) {
+      e.stopPropagation();
+      openDelayInfo();
+      return;
+    }
     const trip = e.target.closest('[data-trip]');
     if (trip && trip.getAttribute('aria-disabled') !== 'true') {
       selectedId = trip.dataset.trip;
