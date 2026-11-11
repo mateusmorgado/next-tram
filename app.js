@@ -252,7 +252,7 @@ function renderHero(plan, now, slots) {
         <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${mins} minutes ${secs % 60} seconds. Tap to switch between minutes and timer">
           ${
             state.countdown
-              ? `<span class="count-num"><span class="timer-text">${mins}:${ss}</span></span>`
+              ? `<span class="count-num">${mins}</span><span class="count-unit">m</span><span class="count-num timer-sec">${ss}</span><span class="count-unit">s</span>`
               : `<span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>`
           }
         </button>

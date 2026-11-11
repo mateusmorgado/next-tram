@@ -21,7 +21,11 @@
       ]
     },
     {
-      "source": "/(index.html|app.js|styles.css|lib/(.*))",
+      "source": "/(index.html|app.js|styles.css)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/lib/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
     {
