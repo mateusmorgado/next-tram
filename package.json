@@ -1,0 +1,13 @@
+{
+  "name": "next-tram",
+  "version": "2.0.0",
+  "description": "When can I actually catch the next tram? Live departures for Leipzig and Berlin as a PWA, MCP server and Alexa skill.",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test",
+    "mcp": "node mcp-server.mjs"
+  }
+}

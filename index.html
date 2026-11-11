@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>NextTram</title>
+  <meta name="description" content="When can I actually catch the next tram? Live departures for Leipzig and Berlin." />
+  <meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try {
+      const s = JSON.parse(localStorage.getItem('nexttram:v1') || '{}');
+      if (s.theme === 'light' || s.theme === 'dark') document.documentElement.dataset.theme = s.theme;
+      if (s.watch) document.documentElement.classList.add('watch');
+    } catch {}
+  </script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <div class="brand-name">NextTram</div>
+          <div class="brand-city" id="cityLabel">Leipzig · LVB</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme" title="Theme">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>
+        </button>
+        <button class="icon-btn" id="watchBtn" type="button" aria-label="Watch view" aria-pressed="false" title="Watch view">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M9 6.5 9.6 3h4.8l.6 3.5M9 17.5l.6 3.5h4.8l.6-3.5M12 9.5V12l1.5 1.5"/></svg>
+        </button>
+        <button class="icon-btn" id="setupBtn" type="button" aria-label="Edit stops" title="Edit stops">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="favs" id="favBar" aria-label="Favorite routes"></nav>
+
+    <section class="route" aria-label="Current route">
+      <div class="route-text" id="routeText"></div>
+      <button class="swap-btn" id="swapBtn" type="button" aria-label="Swap direction for the trip back" title="Trip back">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v15M3.5 7.5 7 4l3.5 3.5M17 20V5M13.5 16.5 17 20l3.5-3.5"/></svg>
+      </button>
+    </section>
+
+    <div class="notice" id="tightNotice" hidden></div>
+    <div class="notice notice-error" id="errorNotice" role="alert" hidden></div>
+
+    <main>
+      <article class="hero" id="hero" aria-live="polite">
+        <div class="hero-skeleton">
+          <div class="sk sk-line"></div>
+          <div class="sk sk-big"></div>
+          <div class="sk sk-line short"></div>
+        </div>
+      </article>
+
+      <section class="compare" id="compare" hidden aria-label="Compare your stops"></section>
+
+      <section class="upcoming" id="upcomingSection" hidden>
+        <h2 class="section-title">Upcoming <span>tap one to track it</span></h2>
+        <ol class="trip-list" id="tripList"></ol>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <span id="statusText">Loading…</span>
+      <button class="text-btn" id="refreshBtn" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
+        Refresh
+      </button>
+    </footer>
+  </div>
+
+  <dialog class="sheet" id="setupSheet" aria-labelledby="setupTitle">
+    <form method="dialog" class="sheet-body" id="setupForm" autocomplete="off">
+      <div class="sheet-head">
+        <h2 id="setupTitle">Your stops</h2>
+        <button class="icon-btn" value="cancel" type="submit" aria-label="Close" formnovalidate>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+
+      <div class="field">
+        <span class="field-label">City</span>
+        <div class="segmented" id="citySeg" role="radiogroup" aria-label="City">
+          <button type="button" role="radio" data-city="leipzig">Leipzig</button>
+          <button type="button" role="radio" data-city="berlin">Berlin</button>
+        </div>
+      </div>
+
+      <div class="field stop-field" data-slot="0">
+        <label class="field-label" for="stop0">Stop 1 <span>near home</span></label>
+        <div class="stop-row">
+          <div class="combo">
+            <input id="stop0" class="input" type="search" placeholder="e.g. Edlichstraße" required />
+            <ul class="suggestions" role="listbox" hidden></ul>
+          </div>
+          <div class="stepper" data-walk="0">
+            <button type="button" data-step="-1" aria-label="Less walking time">−</button>
+            <output>2 min</output>
+            <button type="button" data-step="1" aria-label="More walking time">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field stop-field" data-slot="1">
+        <label class="field-label" for="stop1">Stop 2 <span>optional</span></label>
+        <div class="stop-row">
+          <div class="combo">
+            <input id="stop1" class="input" type="search" placeholder="e.g. Torgauer Platz" />
+            <ul class="suggestions" role="listbox" hidden></ul>
+          </div>
+          <div class="stepper" data-walk="1">
+            <button type="button" data-step="-1" aria-label="Less walking time">−</button>
+            <output>4 min</output>
+            <button type="button" data-step="1" aria-label="More walking time">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="text-btn gps-btn" id="gpsBtn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
+        Use the two stops nearest to me
+      </button>
+
+      <div class="field stop-field" data-slot="dest">
+        <label class="field-label" for="stopDest">Destination</label>
+        <div class="stop-row">
+          <div class="combo">
+            <input id="stopDest" class="input" type="search" placeholder="e.g. Hauptbahnhof" required />
+            <ul class="suggestions" role="listbox" hidden></ul>
+          </div>
+          <div class="stepper" data-walk="dest" title="Walk to this stop when you go back">
+            <button type="button" data-step="-1" aria-label="Less walking time">−</button>
+            <output>0 min</output>
+            <button type="button" data-step="1" aria-label="More walking time">+</button>
+          </div>
+        </div>
+        <p class="hint">The walk time here is used for the trip back (⇅).</p>
+      </div>
+
+      <div class="field">
+        <span class="field-label">Show</span>
+        <div class="segmented" id="modeSeg" role="radiogroup" aria-label="Which vehicles">
+          <button type="button" role="radio" data-mode="tram">Trams</button>
+          <button type="button" role="radio" data-mode="tram_bus">Trams &amp; buses</button>
+          <button type="button" role="radio" data-mode="all">Everything</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="routeLabel">Name</label>
+        <input id="routeLabel" class="input" type="text" placeholder="e.g. Work" maxlength="24" />
+      </div>
+
+      <p class="form-error" id="setupError" hidden></p>
+
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-ghost danger" id="deleteRouteBtn">Delete</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" id="pinBtn">Save as new favorite</button>
+        <button type="button" class="btn btn-primary" id="saveBtn">Save</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "nächste bahn",
+      "intents": [
+        {
+          "name": "NextTramIntent",
+          "slots": [{ "name": "destination", "type": "DESTINATION" }],
+          "samples": [
+            "wann kommt die nächste bahn",
+            "nächste bahn",
+            "wann fährt die nächste straßenbahn",
+            "wann muss ich los",
+            "nächste bahn zum {destination}",
+            "wann fährt die nächste bahn zum {destination}"
+          ]
+        },
+        {
+          "name": "TripBackIntent",
+          "slots": [{ "name": "destination", "type": "DESTINATION" }],
+          "samples": ["nächste bahn nach hause", "wann komme ich nach hause", "rückfahrt", "rückfahrt vom {destination}"]
+        },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+      ],
+      "types": [
+        {
+          "name": "DESTINATION",
+          "values": [
+            { "id": "lej-hbf", "name": { "value": "Hbf", "synonyms": ["Hauptbahnhof", "Bahnhof"] } },
+            { "id": "lej-augustusplatz", "name": { "value": "Augustusplatz", "synonyms": ["Innenstadt", "Zentrum"] } },
+            { "id": "ber-m10", "name": { "value": "Berlin M10", "synonyms": ["Eberswalder", "Berlin"] } }
+          ]
+        }
+      ]
+    }
+  }
+}

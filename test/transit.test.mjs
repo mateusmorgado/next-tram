@@ -1,0 +1,200 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  normalizeStopName,
+  expandStreetName,
+  shortStopName,
+  sameStopName,
+  parseMotisPlan,
+  parseHafasJourneys,
+  planTrips,
+  leaveAdvice,
+  routeOptions,
+  fetchRoute,
+  createTransitClient,
+  describePlan,
+  isCatchable,
+} from '../lib/transit.js';
+import { DEFAULT_ROUTES } from '../lib/stops.js';
+
+const T0 = Date.parse('2026-11-11T16:00:00Z'); // 17:00 in Leipzig
+const iso = (min) => new Date(T0 + min * 60000).toISOString();
+
+test('street name normalization', () => {
+  assert.equal(normalizeStopName('Leipzig, Edlichstr.'), normalizeStopName('Edlichstraße'));
+  assert.equal(normalizeStopName('edlichstrasse'), 'edlichstr');
+  assert.equal(expandStreetName('edlichstr.'), 'edlichstraße');
+  assert.equal(expandStreetName('Edlichstr'), 'Edlichstraße');
+  assert.equal(expandStreetName('Torgauer Platz'), 'Torgauer Platz');
+  assert.equal(shortStopName('Leipzig, Edlichstraße'), 'Edlichstraße');
+  assert.equal(shortStopName('U Eberswalder Str. (Berlin)'), 'U Eberswalder Str.');
+  assert.ok(sameStopName('Leipzig, Torgauer Platz', 'Torgauer Platz'));
+  assert.ok(!sameStopName('Torgauer Platz', 'Edlichstraße'));
+});
+
+const motisLeg = (over) => ({
+  mode: 'TRAM',
+  from: { name: 'Edlichstraße', stopId: 'de-DELFI_de:14713:11508:1:1' },
+  to: { name: 'Hauptbahnhof' },
+  startTime: iso(5),
+  endTime: iso(15),
+  scheduledStartTime: iso(4),
+  realTime: true,
+  routeShortName: '7',
+  headsign: 'Böhlitz-Ehrenberg',
+  tripId: 'trip-7a',
+  ...over,
+});
+
+test('parseMotisPlan keeps only legs boarding at the chosen stop', () => {
+  const data = {
+    itineraries: [
+      { endTime: iso(16), legs: [{ mode: 'WALK' }, motisLeg({})] },
+      // Walks to a different stop first: must be dropped.
+      { endTime: iso(17), legs: [{ mode: 'WALK' }, motisLeg({ from: { name: 'Torgauer Platz' }, tripId: 'trip-3' })] },
+      // S-Bahn when the filter is tram_bus: dropped.
+      { endTime: iso(18), legs: [motisLeg({ mode: 'SUBURBAN', routeShortName: 'S3', tripId: 's' })] },
+    ],
+  };
+  const list = parseMotisPlan(data, { from: { name: 'Edlichstraße', tid: 'de-DELFI_de:14713:11508' }, filter: 'tram_bus' });
+  assert.equal(list.length, 1);
+  assert.equal(list[0].lineName, 'Tram 7');
+  assert.equal(list[0].line, '7');
+  assert.equal(list[0].delayMin, 1);
+  assert.equal(list[0].arrMs, Date.parse(iso(16)));
+});
+
+test('parseHafasJourneys maps DB "STR 3" and checks the origin', () => {
+  const data = {
+    journeys: [
+      {
+        legs: [
+          {
+            origin: { id: '123', name: 'Torgauer Platz, Leipzig' },
+            destination: { name: 'Hauptbahnhof' },
+            departure: iso(7),
+            plannedDeparture: iso(7),
+            departureDelay: 0,
+            arrival: iso(19),
+            line: { name: 'STR 3', product: 'tram' },
+            direction: 'Knautkleeberg',
+            tripId: 'x',
+          },
+        ],
+      },
+      {
+        legs: [
+          { walking: true, origin: { name: 'Torgauer Platz' }, arrival: iso(6) },
+          { origin: { id: '999', name: 'Eisenbahnstraße' }, departure: iso(8), line: { name: 'Bus 70', product: 'bus' }, arrival: iso(20) },
+        ],
+      },
+    ],
+  };
+  const list = parseHafasJourneys(data, { from: { name: 'Torgauer Platz', hafasId: '123' } });
+  assert.equal(list.length, 1);
+  assert.equal(list[0].lineName, 'Tram 3');
+  assert.equal(list[0].boardAt, 'Torgauer Platz');
+  assert.equal(list[0].realtime, true);
+});
+
+const conn = (slot, depMin, walk, extra = {}) => ({
+  id: `${slot}:${depMin}`,
+  slot,
+  walk,
+  depMs: T0 + depMin * 60000,
+  arrMs: T0 + (depMin + 12) * 60000,
+  lineName: slot === 0 ? 'Tram 7' : 'Tram 3',
+  stopName: slot === 0 ? 'Edlichstraße' : 'Torgauer Platz',
+  toName: 'Hauptbahnhof',
+  direction: 'Somewhere',
+  ...extra,
+});
+
+test('walk buffer: too-tight tram is skipped and reported', () => {
+  const list = [conn(0, 1, 2), conn(1, 3, 4), conn(1, 6, 4), conn(0, 9, 2)];
+  const plan = planTrips(list, T0, { slots: 2 });
+  assert.equal(plan.hero.id, '1:6');
+  assert.equal(plan.tooTight.id, '0:1');
+  assert.equal(plan.perSlot[0].next.id, '0:9');
+  assert.equal(plan.perSlot[1].next.id, '1:6');
+  assert.equal(plan.manual, false);
+});
+
+test('catchable boundary is exactly the walk time', () => {
+  assert.ok(isCatchable(conn(0, 2, 2), T0));
+  assert.ok(!isCatchable(conn(0, 2, 2), T0 + 1000));
+});
+
+test('tapping a trip locks the hero until it leaves', () => {
+  const list = [conn(0, 3, 2), conn(0, 9, 2)];
+  let plan = planTrips(list, T0, { selectedId: '0:9' });
+  assert.equal(plan.hero.id, '0:9');
+  assert.equal(plan.manual, true);
+  assert.equal(plan.tooTight, null);
+  plan = planTrips(list, T0 + 10 * 60000, { selectedId: '0:9' });
+  assert.equal(plan.hero, null);
+});
+
+test('leave advice', () => {
+  assert.deepEqual(leaveAdvice(conn(0, 6, 2), T0), { now: false, minutes: 4 });
+  assert.equal(leaveAdvice(conn(0, 2, 2), T0).now, true);
+  assert.equal(leaveAdvice(conn(0, 5, 0), T0).atStop, true);
+});
+
+test('routeOptions forward and reversed', () => {
+  const route = DEFAULT_ROUTES[0];
+  const fwd = routeOptions(route);
+  assert.equal(fwd.length, 2);
+  assert.equal(fwd[0].from.name, 'Edlichstraße');
+  assert.equal(fwd[1].walk, 4);
+  const back = routeOptions(route, true);
+  assert.equal(back[0].from.name, 'Hauptbahnhof');
+  assert.equal(back[1].to.name, 'Torgauer Platz');
+  assert.equal(back[0].walk, 0);
+  // Missing walk becomes the default, not NaN.
+  assert.equal(routeOptions({ ...route, stops: [{ stop: route.stops[0].stop }] })[0].walk, 2);
+});
+
+test('fetchRoute queries both stops in parallel and falls back to HAFAS', async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    const u = new URL(url);
+    const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
+    if (u.host === 'api.transitous.org' && u.pathname.endsWith('/geocode')) {
+      const text = u.searchParams.get('text');
+      if (text.includes('Edlich')) return json([{ type: 'STOP', id: 'de-DELFI_de:14713:11508', name: 'Edlichstraße', lat: 51.3447, lon: 12.4149 }]);
+      if (text.includes('Torgauer')) return json([{ type: 'STOP', id: 'de-DELFI_de:14713:11600', name: 'Torgauer Platz', lat: 51.3469, lon: 12.4141 }]);
+      return json([{ type: 'STOP', id: 'de-DELFI_de:14713:hbf', name: 'Leipzig Hauptbahnhof', lat: 51.3455, lon: 12.3817 }]);
+    }
+    if (u.host === 'api.transitous.org' && u.pathname.endsWith('/plan')) {
+      if (u.searchParams.get('fromPlace').endsWith('11600')) return json({}, 503); // Torgauer Platz fails on Transitous
+      return json({ itineraries: [{ endTime: iso(16), legs: [motisLeg({})] }] });
+    }
+    if (u.pathname === '/locations') return json([{ type: 'stop', id: '555', name: 'Leipzig, Torgauer Platz', location: { latitude: 51.3469, longitude: 12.4141 } }, { type: 'stop', id: '8010205', name: 'Leipzig Hbf', location: { latitude: 51.3455, longitude: 12.3817 } }]);
+    if (u.pathname === '/journeys') {
+      assert.equal(u.searchParams.get('tram'), 'true');
+      assert.equal(u.searchParams.get('suburban'), 'false');
+      return json({ journeys: [{ legs: [{ origin: { id: '555', name: 'Torgauer Platz' }, departure: iso(3), plannedDeparture: iso(3), arrival: iso(14), line: { name: 'STR 8', product: 'tram' }, direction: 'Grünau', tripId: 't8' }] }] });
+    }
+    return json({}, 404);
+  };
+  const client = createTransitClient({ fetchImpl });
+  const { connections, options, errors } = await fetchRoute(client, DEFAULT_ROUTES[0]);
+  assert.equal(errors.length, 0);
+  assert.deepEqual(connections.map((c) => [c.slot, c.lineName]), [[1, 'Tram 8'], [0, 'Tram 7']]);
+  assert.equal(options[0].from.tid, 'de-DELFI_de:14713:11508');
+  assert.equal(options[1].from.hafasId, '555');
+
+  const plan = planTrips(connections, T0, { slots: 2 });
+  assert.equal(plan.hero.lineName, 'Tram 7'); // Tram 8 in 3 min is too tight for a 4 min walk
+  assert.equal(plan.tooTight.lineName, 'Tram 8');
+  const text = describePlan(plan, T0);
+  assert.match(text, /^Go to Edlichstraße\. Tram 7 towards Böhlitz-Ehrenberg leaves in 5 minutes, at 17:05\. Leave in 3 minutes\./);
+  assert.match(describePlan(plan, T0, { lang: 'de' }), /Geh zur Haltestelle Edlichstraße/);
+});
+
+test('fetchRoute throws when every stop fails', async () => {
+  const client = createTransitClient({ fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) }) });
+  await assert.rejects(fetchRoute(client, DEFAULT_ROUTES[2]), /HTTP 500/);
+});

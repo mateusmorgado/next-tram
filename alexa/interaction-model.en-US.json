@@ -1,0 +1,40 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "next tram",
+      "intents": [
+        {
+          "name": "NextTramIntent",
+          "slots": [{ "name": "destination", "type": "DESTINATION" }],
+          "samples": [
+            "when is the next tram",
+            "next tram",
+            "when does the next tram leave",
+            "when do I need to leave",
+            "next tram to {destination}",
+            "when is the next tram to {destination}"
+          ]
+        },
+        {
+          "name": "TripBackIntent",
+          "slots": [{ "name": "destination", "type": "DESTINATION" }],
+          "samples": ["next tram home", "when is the next tram home", "trip back", "how do I get home from {destination}"]
+        },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+      ],
+      "types": [
+        {
+          "name": "DESTINATION",
+          "values": [
+            { "id": "lej-hbf", "name": { "value": "Hbf", "synonyms": ["Hauptbahnhof", "main station", "central station"] } },
+            { "id": "lej-augustusplatz", "name": { "value": "Augustusplatz", "synonyms": ["Augustus Square", "the city centre"] } },
+            { "id": "ber-m10", "name": { "value": "Berlin M10", "synonyms": ["Eberswalder", "Berlin"] } }
+          ]
+        }
+      ]
+    }
+  }
+}

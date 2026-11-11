@@ -1,0 +1,670 @@
+import { CITIES, DEFAULT_ROUTES, DEFAULT_MODE_FILTER } from './lib/stops.js';
+import {
+  createTransitClient,
+  fetchRoute,
+  planTrips,
+  leaveAdvice,
+  minutesUntil,
+  formatClock,
+  shortStopName,
+  routeOptions,
+} from './lib/transit.js';
+
+const STORAGE_KEY = 'nexttram:v1';
+const REFRESH_MS = 60_000;
+const client = createTransitClient();
+
+// ───────────────────────── State ─────────────────────────
+
+const state = loadState();
+let reversed = false;
+let connections = [];
+let lastFetch = 0;
+let lastSource = '';
+let selectedId = null;
+let loading = false;
+let fetchToken = 0;
+let refreshTimer = null;
+
+function clone(v) {
+  return JSON.parse(JSON.stringify(v));
+}
+
+function loadState() {
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {};
+  } catch {}
+  const routes = Array.isArray(saved.routes) && saved.routes.length ? saved.routes : clone(DEFAULT_ROUTES);
+  const activeId = routes.some((r) => r.id === saved.activeId) ? saved.activeId : routes[0].id;
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch) };
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {}
+}
+
+const activeRoute = () => state.routes.find((r) => r.id === state.activeId) || state.routes[0];
+
+// ───────────────────────── DOM helpers ─────────────────────────
+
+const $ = (id) => document.getElementById(id);
+const esc = (v) =>
+  String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const badge = (c, size = '') => `<span class="badge ${esc(c.product)} ${size}">${esc(c.line)}</span>`;
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+// ───────────────────────── Rendering ─────────────────────────
+
+function routeLabel(route) {
+  if (route.label) return route.label;
+  return shortStopName(route.dest?.name || 'Route');
+}
+
+function renderFavs() {
+  const bar = $('favBar');
+  bar.innerHTML =
+    state.routes
+      .map(
+        (r) =>
+          `<button class="chip" type="button" data-route="${esc(r.id)}" aria-current="${r.id === state.activeId}">${esc(routeLabel(r))}</button>`,
+      )
+      .join('') + `<button class="chip chip-add" type="button" id="addRouteBtn">+ New</button>`;
+}
+
+function renderRoute() {
+  const route = activeRoute();
+  const city = CITIES[route.city] || CITIES.leipzig;
+  $('cityLabel').textContent = `${city.label} · ${city.operator}`;
+  const homes = route.stops.map((s) => `<strong>${esc(shortStopName(s.stop.name))}</strong>`).join(' / ');
+  const dest = `<strong>${esc(shortStopName(route.dest.name))}</strong>`;
+  const full = reversed
+    ? `<span class="back-tag">Back</span>${dest}<span class="arrow">→</span>${homes}`
+    : `${homes}<span class="arrow">→</span>${dest}`;
+  const short = reversed ? `${dest} → home` : `→ ${dest}`;
+  $('routeText').innerHTML = `<span class="rt-full">${full}</span><span class="rt-short">${short}</span>`;
+  $('swapBtn').setAttribute('aria-pressed', String(reversed));
+}
+
+function render() {
+  const now = Date.now();
+  const route = activeRoute();
+  const slots = routeOptions(route, reversed).length;
+  const plan = planTrips(connections, now, { selectedId, slots });
+  if (selectedId && !plan.upcoming.some((c) => c.id === selectedId)) selectedId = null;
+
+  renderTightNotice(plan, now);
+  renderHero(plan, now);
+  renderCompare(plan, now, slots);
+  renderUpcoming(plan, now);
+  renderStatus(now);
+
+  // When the shown tram leaves, fetch fresh data.
+  if (lastFetch && !loading && plan.hero && plan.hero.depMs <= now + 1000) refresh();
+}
+
+function renderTightNotice(plan, now) {
+  const el = $('tightNotice');
+  const t = plan.tooTight;
+  if (!t) {
+    el.hidden = true;
+    return;
+  }
+  const mins = minutesUntil(t, now);
+  el.hidden = false;
+  el.innerHTML = `<span>Earlier: <b>${esc(t.lineName)}</b> at ${esc(t.stopName)} in ${mins} min (${formatClock(t.depMs)}) is too tight for your ${t.walk} min walk.</span>`;
+}
+
+function renderHero(plan, now) {
+  const el = $('hero');
+  const c = plan.hero;
+  if (!c) {
+    if (!lastFetch) return; // keep skeleton until the first answer
+    el.innerHTML = `<div class="hero-empty"><strong>No catchable departures</strong>${
+      connections.length ? 'Nothing you can still reach in the next hour or two.' : 'No trams or buses found for this route right now.'
+    }</div>`;
+    return;
+  }
+  const secs = Math.max(0, Math.floor((c.depMs - now) / 1000));
+  const mins = Math.floor(secs / 60);
+  const ss = String(secs % 60).padStart(2, '0');
+  const advice = leaveAdvice(c, now);
+
+  let delay = '';
+  if (!c.realtime) delay = '<span class="delay plan">scheduled</span>';
+  else if (c.delayMin > 0) delay = `<span class="delay late">+${c.delayMin} min</span>`;
+  else if (c.delayMin < 0) delay = `<span class="delay ok">${c.delayMin} min</span>`;
+  else delay = '<span class="delay ok">on time</span>';
+
+  let leave;
+  if (advice.atStop) leave = `<div class="leave idle">You're at the stop</div>`;
+  else if (advice.now)
+    leave = `<div class="leave now">🏃 Leave now<small>${plural(c.walk, 'min')} walk${advice.late ? ', hurry' : ''}</small></div>`;
+  else
+    leave = `<div class="leave">🚶 Leave in ${advice.minutes === 0 ? '< 1' : advice.minutes} min<small>${c.walk} min walk</small></div>`;
+  if (plan.manual) {
+    leave = leave.replace(/<small>.*<\/small>/, '<button class="link" type="button" id="autoBtn">Back to fastest</button>');
+  }
+
+  const eyebrow = reversed ? `From ${esc(c.stopName)} to` : 'Go to stop';
+  const place = reversed ? esc(c.toName) : esc(c.stopName);
+  el.innerHTML = `
+    <div class="hero-main" id="heroMain" title="Tap to refresh">
+      <div class="hero-eyebrow">${plan.manual ? 'Tracking your pick · ' : ''}${eyebrow}</div>
+      <div class="hero-stop">${place}</div>
+      <div class="hero-line">${badge(c, 'lg')}<span class="dir">→ ${esc(c.direction)}</span></div>
+      <div class="hero-count">
+        <div class="count" aria-label="${mins} minutes">
+          <span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>
+        </div>
+        <div class="times">
+          <div>leaves <b>${formatClock(c.depMs)}</b> ${delay}</div>
+          ${c.arrMs ? `<div>arrives <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${plural(c.transfers, 'change')}` : ''}</div>` : ''}
+        </div>
+      </div>
+    </div>
+    ${leave}`;
+}
+
+function renderCompare(plan, now, slots) {
+  const el = $('compare');
+  if (slots < 2 || !lastFetch) {
+    el.hidden = true;
+    return;
+  }
+  const options = routeOptions(activeRoute(), reversed);
+  el.hidden = false;
+  el.innerHTML = plan.perSlot
+    .map((p) => {
+      const o = options[p.slot];
+      const name = reversed ? shortStopName(o.to.name) : shortStopName(o.from.name);
+      const isBest = plan.hero && plan.hero.slot === p.slot && !plan.manual;
+      const n = p.next;
+      return `<button class="stop-card ${isBest ? 'best' : ''}" type="button" ${n ? `data-trip="${esc(n.id)}"` : 'disabled'}>
+        <div class="meta"><span>${reversed ? 'Get off at' : `Stop ${p.slot + 1} · ${o.walk} min walk`}</span>${isBest ? '<span class="best-tag">Best</span>' : ''}</div>
+        <div class="name">${esc(name)}</div>
+        ${
+          n
+            ? `<div class="next">${badge(n)}<span class="in">${minutesUntil(n, now)} min</span><span class="at">${formatClock(reversed && n.arrMs ? n.arrMs : n.depMs)}</span></div>`
+            : `<div class="none">${p.count ? 'Nothing catchable' : 'No departures found'}</div>`
+        }
+      </button>`;
+    })
+    .join('');
+}
+
+function renderUpcoming(plan, now) {
+  const section = $('upcomingSection');
+  if (!plan.upcoming.length) {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  const multi = routeOptions(activeRoute(), reversed).length > 1;
+  $('tripList').innerHTML = plan.upcoming
+    .map((c) => {
+      const tight = c.depMs - now < c.walk * 60000;
+      const selected = plan.hero && plan.hero.id === c.id;
+      const sub = [
+        multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '',
+        c.arrMs ? `arr ${formatClock(c.arrMs)}` : '',
+        c.realtime && c.delayMin > 0 ? `+${c.delayMin}` : '',
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      return `<li><button class="trip ${tight ? 'tight' : ''} ${selected ? 'selected' : ''}" type="button" data-trip="${esc(c.id)}">
+        <span class="t">${formatClock(c.depMs)}</span>
+        ${badge(c)}
+        <span class="info"><span class="dir">${esc(c.direction)}</span><span class="sub">${esc(sub)}</span></span>
+        <span class="in">${tight ? 'too tight' : `${minutesUntil(c, now)} min`}</span>
+      </button></li>`;
+    })
+    .join('');
+}
+
+function renderStatus(now) {
+  const el = $('statusText');
+  if (loading && !lastFetch) el.textContent = 'Loading live departures…';
+  else if (!lastFetch) el.textContent = '';
+  else {
+    const ago = Math.round((now - lastFetch) / 1000);
+    const when = ago < 10 ? 'just now' : ago < 60 ? `${ago}s ago` : `${Math.floor(ago / 60)} min ago`;
+    el.textContent = `Updated ${when}${lastSource ? ` · ${lastSource}` : ''}`;
+  }
+  document.body.classList.toggle('loading', loading);
+}
+
+// ───────────────────────── Data ─────────────────────────
+
+async function refresh() {
+  const route = activeRoute();
+  const token = ++fetchToken;
+  loading = true;
+  renderStatus(Date.now());
+  try {
+    const result = await fetchRoute(client, route, { reversed });
+    if (token !== fetchToken) return;
+    connections = result.connections;
+    lastFetch = Date.now();
+    const sources = new Set(result.connections.map((c) => c.source));
+    lastSource = [...sources].map((s) => (s === 'transitous' ? 'Transitous' : CITIES[route.city]?.key === 'berlin' ? 'BVG' : 'DB')).join(' + ');
+    cacheResolvedIds(route, result.options);
+    const err = $('errorNotice');
+    if (result.errors.length) {
+      const failed = result.errors
+        .map((e) => {
+          const o = result.options.find((x) => x.slot === e.slot);
+          return shortStopName((reversed ? o?.to : o?.from)?.name || '');
+        })
+        .join(', ');
+      err.textContent = `Couldn't load ${failed}. Showing the other stop only.`;
+      err.hidden = false;
+    } else err.hidden = true;
+  } catch (e) {
+    if (token !== fetchToken) return;
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    $('errorNotice').textContent = offline
+      ? "You're offline. Departures will load when you're back online."
+      : `Couldn't load live departures (${e.message}). Tap Refresh to try again.`;
+    $('errorNotice').hidden = false;
+    if (!lastFetch) lastFetch = Date.now();
+  } finally {
+    if (token === fetchToken) {
+      loading = false;
+      render();
+    }
+  }
+}
+
+/** Remember the stop IDs the APIs gave us, so the next request skips the lookup. */
+function cacheResolvedIds(route, options) {
+  const pick = (s) => ({ tid: s.tid, hafasId: s.hafasId });
+  options.forEach((o) => {
+    const home = reversed ? o.to : o.from;
+    const away = reversed ? o.from : o.to;
+    const slot = route.stops[o.slot];
+    if (slot) Object.assign(slot.stop, stripUndefined(pick(home)));
+    Object.assign(route.dest, stripUndefined(pick(away)));
+  });
+  saveState();
+}
+
+function stripUndefined(o) {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
+}
+
+function switchRoute(id) {
+  if (id === state.activeId && lastFetch) return;
+  state.activeId = id;
+  reversed = false;
+  resetData();
+  saveState();
+  renderFavs();
+  renderRoute();
+  refresh();
+}
+
+function resetData() {
+  connections = [];
+  lastFetch = 0;
+  selectedId = null;
+  $('hero').innerHTML = '<div class="hero-skeleton"><div class="sk sk-line"></div><div class="sk sk-big"></div><div class="sk sk-line short"></div></div>';
+  $('compare').hidden = true;
+  $('upcomingSection').hidden = true;
+  $('tightNotice').hidden = true;
+  $('errorNotice').hidden = true;
+}
+
+function scheduleRefresh() {
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    if (document.visibilityState === 'visible' && Date.now() - lastFetch >= REFRESH_MS) refresh();
+  }, 5000);
+}
+
+// ───────────────────────── Theme & watch ─────────────────────────
+
+function applyTheme() {
+  const root = document.documentElement;
+  if (state.theme === 'system') delete root.dataset.theme;
+  else root.dataset.theme = state.theme;
+}
+
+function toggleTheme() {
+  const dark = state.theme === 'dark' || (state.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  state.theme = dark ? 'light' : 'dark';
+  applyTheme();
+  saveState();
+}
+
+function applyWatch() {
+  document.documentElement.classList.toggle('watch', state.watch);
+  $('watchBtn').setAttribute('aria-pressed', String(state.watch));
+}
+
+// ───────────────────────── Setup sheet ─────────────────────────
+
+let draft = null;
+let editingId = null;
+
+function openSetup(routeId) {
+  const base = routeId ? state.routes.find((r) => r.id === routeId) : null;
+  editingId = base ? base.id : null;
+  draft = base
+    ? clone(base)
+    : {
+        id: '',
+        label: '',
+        city: activeRoute().city,
+        stops: [{ stop: null, walk: 2 }],
+        dest: null,
+        destWalk: 0,
+        modes: DEFAULT_MODE_FILTER,
+      };
+  while (draft.stops.length < 2) draft.stops.push({ stop: null, walk: draft.stops.length ? 4 : 2 });
+  $('setupTitle').textContent = base ? 'Edit route' : 'New route';
+  $('deleteRouteBtn').hidden = !base || state.routes.length < 2;
+  $('pinBtn').hidden = !base;
+  $('saveBtn').textContent = base ? 'Save' : 'Add favorite';
+  $('setupError').hidden = true;
+  syncSetupForm();
+  $('setupSheet').showModal();
+}
+
+function syncSetupForm() {
+  document.querySelectorAll('#citySeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.city === draft.city)));
+  document.querySelectorAll('#modeSeg button').forEach((b) =>
+    b.setAttribute('aria-checked', String(b.dataset.mode === (draft.modes || DEFAULT_MODE_FILTER))),
+  );
+  $('stop0').value = draft.stops[0]?.stop ? shortStopName(draft.stops[0].stop.name) : '';
+  $('stop1').value = draft.stops[1]?.stop ? shortStopName(draft.stops[1].stop.name) : '';
+  $('stopDest').value = draft.dest ? shortStopName(draft.dest.name) : '';
+  $('routeLabel').value = draft.label || '';
+  syncSteppers();
+}
+
+function syncSteppers() {
+  document.querySelectorAll('.stepper').forEach((st) => {
+    const key = st.dataset.walk;
+    const v = key === 'dest' ? draft.destWalk ?? 0 : draft.stops[Number(key)]?.walk ?? 0;
+    st.querySelector('output').textContent = `${v} min`;
+  });
+}
+
+function stepWalk(key, delta) {
+  const clamp = (v) => Math.max(0, Math.min(30, (Number(v) || 0) + delta));
+  if (key === 'dest') draft.destWalk = clamp(draft.destWalk);
+  else draft.stops[Number(key)].walk = clamp(draft.stops[Number(key)].walk);
+  syncSteppers();
+}
+
+function readDraft() {
+  // Typed text that was never picked from the list still counts: it's looked up by name later.
+  const typed = (id, current) => {
+    const v = $(id).value.trim();
+    if (!v) return null;
+    if (current && shortStopName(current.name) === v) return current;
+    return { name: v };
+  };
+  draft.stops[0].stop = typed('stop0', draft.stops[0].stop);
+  draft.stops[1].stop = typed('stop1', draft.stops[1].stop);
+  draft.dest = typed('stopDest', draft.dest);
+  draft.label = $('routeLabel').value.trim();
+  const route = clone(draft);
+  route.stops = route.stops.filter((s) => s.stop);
+  return route;
+}
+
+function validate(route) {
+  if (!route.stops.length) return 'Pick at least one stop near you.';
+  if (!route.dest) return 'Pick a destination.';
+  return null;
+}
+
+function saveSetup(asNew) {
+  const route = readDraft();
+  const problem = validate(route);
+  if (problem) {
+    $('setupError').textContent = problem;
+    $('setupError').hidden = false;
+    return;
+  }
+  if (asNew || !editingId) {
+    route.id = `r${Date.now().toString(36)}`;
+    if (asNew && route.label && state.routes.some((r) => r.label === route.label)) route.label += ' 2';
+    state.routes.push(route);
+  } else {
+    route.id = editingId;
+    state.routes = state.routes.map((r) => (r.id === editingId ? route : r));
+  }
+  state.activeId = route.id;
+  saveState();
+  $('setupSheet').close();
+  reversed = false;
+  resetData();
+  renderFavs();
+  renderRoute();
+  refresh();
+}
+
+function deleteRoute() {
+  if (!editingId || state.routes.length < 2) return;
+  state.routes = state.routes.filter((r) => r.id !== editingId);
+  state.activeId = state.routes[0].id;
+  saveState();
+  $('setupSheet').close();
+  switchRoute(state.activeId);
+  renderFavs();
+}
+
+/** Autocomplete for one stop input. */
+function setupCombo(inputId, onPick) {
+  const input = $(inputId);
+  const list = input.parentElement.querySelector('.suggestions');
+  let timer = null;
+  let items = [];
+  let active = -1;
+  let seq = 0;
+
+  const close = () => {
+    list.hidden = true;
+    active = -1;
+  };
+  const show = (html) => {
+    list.innerHTML = html;
+    list.hidden = false;
+  };
+  const choose = (i) => {
+    const s = items[i];
+    if (!s) return;
+    input.value = s.name;
+    onPick(s);
+    close();
+  };
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) return close();
+    timer = setTimeout(async () => {
+      const my = ++seq;
+      show('<li class="muted">Searching…</li>');
+      try {
+        items = await client.searchStops(draft.city, q);
+      } catch {
+        items = [];
+      }
+      if (my !== seq) return;
+      if (!items.length) return show('<li class="muted">No stops found</li>');
+      active = -1;
+      show(items.map((s, i) => `<li role="option" data-i="${i}" aria-selected="false">${esc(s.name)}</li>`).join(''));
+    }, 250);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (list.hidden || !items.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      list.querySelectorAll('li').forEach((li, i) => li.setAttribute('aria-selected', String(i === active)));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      choose(active >= 0 ? active : 0);
+    } else if (e.key === 'Escape') close();
+  });
+  list.addEventListener('pointerdown', (e) => {
+    const li = e.target.closest('li[data-i]');
+    if (li) {
+      e.preventDefault();
+      choose(Number(li.dataset.i));
+    }
+  });
+  input.addEventListener('blur', () => setTimeout(close, 150));
+}
+
+function useGps() {
+  const btn = $('gpsBtn');
+  const label = btn.lastChild;
+  const original = label.textContent;
+  const fail = (msg) => {
+    $('setupError').textContent = msg;
+    $('setupError').hidden = false;
+    label.textContent = original;
+  };
+  if (!navigator.geolocation) return fail('Location is not available in this browser.');
+  label.textContent = ' Finding stops near you…';
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      try {
+        const near = await client.nearbyStops(draft.city, pos.coords.latitude, pos.coords.longitude);
+        if (!near.length) return fail('No stops found near you in this city.');
+        draft.stops[0].stop = { name: near[0].name, hafasId: near[0].hafasId, lat: near[0].lat, lon: near[0].lon };
+        if (near[1]) draft.stops[1].stop = { name: near[1].name, hafasId: near[1].hafasId, lat: near[1].lat, lon: near[1].lon };
+        const walkMin = (m) => Math.max(1, Math.round((m || 0) / 80)); // ~80 m per minute
+        draft.stops[0].walk = walkMin(near[0].distance);
+        if (near[1]) draft.stops[1].walk = walkMin(near[1].distance);
+        syncSetupForm();
+        label.textContent = original;
+      } catch (e) {
+        fail(`Couldn't find nearby stops (${e.message}).`);
+      }
+    },
+    () => fail('Location permission was denied.'),
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+  );
+}
+
+// ───────────────────────── Wiring ─────────────────────────
+
+function wire() {
+  $('favBar').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-route]');
+    if (chip) {
+      if (chip.dataset.route === state.activeId) openSetup(state.activeId);
+      else switchRoute(chip.dataset.route);
+    } else if (e.target.closest('#addRouteBtn')) openSetup(null);
+  });
+  $('swapBtn').addEventListener('click', () => {
+    reversed = !reversed;
+    resetData();
+    renderRoute();
+    refresh();
+  });
+  $('refreshBtn').addEventListener('click', refresh);
+  $('setupBtn').addEventListener('click', () => openSetup(state.activeId));
+  $('themeBtn').addEventListener('click', toggleTheme);
+  $('watchBtn').addEventListener('click', () => {
+    state.watch = !state.watch;
+    applyWatch();
+    saveState();
+  });
+
+  document.addEventListener('click', (e) => {
+    const trip = e.target.closest('[data-trip]');
+    if (trip && trip.getAttribute('aria-disabled') !== 'true') {
+      selectedId = trip.dataset.trip;
+      render();
+      if (!document.documentElement.classList.contains('watch')) $('hero').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+    if (e.target.closest('#autoBtn')) {
+      selectedId = null;
+      render();
+      return;
+    }
+    if (e.target.closest('#heroMain') || (document.documentElement.classList.contains('watch') && e.target.closest('.hero'))) refresh();
+  });
+
+  // Watch: tap the route to cycle favorites.
+  $('routeText').addEventListener('click', () => {
+    const watchy = document.documentElement.classList.contains('watch') || matchMedia('(max-width: 380px)').matches;
+    if (!watchy || state.routes.length < 2) return;
+    const i = state.routes.findIndex((r) => r.id === state.activeId);
+    switchRoute(state.routes[(i + 1) % state.routes.length].id);
+    renderFavs();
+  });
+
+  // Setup sheet
+  $('citySeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-city]');
+    if (!b || b.dataset.city === draft.city) return;
+    draft.city = b.dataset.city;
+    draft.stops = [{ stop: null, walk: 2 }, { stop: null, walk: 4 }];
+    draft.dest = null;
+    syncSetupForm();
+  });
+  $('modeSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mode]');
+    if (!b) return;
+    draft.modes = b.dataset.mode;
+    syncSetupForm();
+  });
+  document.querySelectorAll('.stepper').forEach((st) =>
+    st.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-step]');
+      if (b) stepWalk(st.dataset.walk, Number(b.dataset.step));
+    }),
+  );
+  setupCombo('stop0', (s) => (draft.stops[0].stop = s));
+  setupCombo('stop1', (s) => (draft.stops[1].stop = s));
+  setupCombo('stopDest', (s) => (draft.dest = s));
+  $('gpsBtn').addEventListener('click', useGps);
+  $('saveBtn').addEventListener('click', () => saveSetup(false));
+  $('pinBtn').addEventListener('click', () => saveSetup(true));
+  $('deleteRouteBtn').addEventListener('click', deleteRoute);
+  $('setupForm').addEventListener('submit', (e) => {
+    // Enter in a text field shouldn't close the sheet; only the × button does.
+    if (e.submitter?.value !== 'cancel') e.preventDefault();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - lastFetch > 30_000) refresh();
+  });
+  window.addEventListener('online', refresh);
+}
+
+function applyUrlParams() {
+  const p = new URLSearchParams(location.search);
+  const id = p.get('route');
+  if (id && state.routes.some((r) => r.id === id)) state.activeId = id;
+  if (p.get('back') === '1') reversed = true;
+}
+
+function init() {
+  applyUrlParams();
+  applyTheme();
+  applyWatch();
+  wire();
+  renderFavs();
+  renderRoute();
+  refresh();
+  scheduleRefresh();
+  setInterval(render, 1000);
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+init();
