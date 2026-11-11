@@ -252,3 +252,20 @@ test('shortDirection abbreviates long directions like a departure board', async 
   assert.equal(f('S Schöneweide/Sterndamm'), 'S Schöneweide');
   assert.ok(f('Universitätsklinikum').length <= 16);
 });
+
+test('line names never show "?" and handle Leipzig "E" trams', async () => {
+  const { lineLabel, motisLineName, productFromMotisMode } = await import('../lib/transit.js');
+  assert.equal(lineLabel('STR E', 'tram'), 'E');
+  assert.equal(lineLabel('E', 'tram'), 'E');
+  assert.equal(lineLabel('Einsetzer', 'tram'), 'E');
+  assert.equal(lineLabel('', 'bus'), 'Bus');
+  assert.notEqual(lineLabel('', 'other'), '?');
+  assert.equal(motisLineName({ displayName: '7', routeShortName: '' }), '7');
+  assert.equal(motisLineName({ routeShortName: '', tripShortName: 'E' }), 'E');
+  assert.equal(motisLineName({ routeShortName: '', routeLongName: 'Einsatzwagen' }), 'Einsatzwagen');
+  assert.equal(motisLineName({ routeShortName: '', routeLongName: 'Böhlitz-Ehrenberg - Sommerfeld' }), '');
+  assert.equal(productFromMotisMode('OTHER', 900), 'tram');
+  const [c] = parseMotisPlan({ itineraries: [{ endTime: iso(15), legs: [{ ...motisLeg({}), routeShortName: undefined, displayName: 'E' }] }] });
+  assert.equal(c.line, 'E');
+  assert.equal(c.lineName, 'Tram E');
+});
