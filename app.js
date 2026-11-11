@@ -109,6 +109,7 @@ function render() {
   lastPlan = plan;
 
   renderHero(plan, now, slots);
+  fitMonogram();
   renderWatchNav(plan, now);
   renderCompare(plan, now, slots);
   renderUpcoming(plan, now);
@@ -142,12 +143,43 @@ function stopMonogram(name) {
   return base(me, 2);
 }
 
+/**
+ * Put the mark's ink (not its text box) exactly in the card's top-right corner, so the
+ * letters touch both borders whatever font the device uses. The rounded corner may clip them.
+ */
+const inkCache = new Map();
+let measureCtx = null;
+function fitMonogram() {
+  const el = document.querySelector('#hero .monogram');
+  if (!el) return;
+  el.style.top = el.style.right = '';
+  const cs = getComputedStyle(el);
+  if (cs.transform !== 'none') return; // watch layout centres it instead
+  const font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const key = `${el.textContent}|${font}|${cs.letterSpacing}|${cs.lineHeight}|${cs.paddingLeft}`;
+  let ink = inkCache.get(key);
+  if (!ink) {
+    measureCtx ||= document.createElement('canvas').getContext('2d');
+    if (!measureCtx || !('actualBoundingBoxAscent' in TextMetrics.prototype)) return;
+    measureCtx.font = font;
+    if ('letterSpacing' in measureCtx) measureCtx.letterSpacing = cs.letterSpacing;
+    const m = measureCtx.measureText(el.textContent);
+    const lineH = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.05;
+    const baseline = parseFloat(cs.paddingTop) + (lineH - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
+    ink = { top: baseline - m.actualBoundingBoxAscent, right: parseFloat(cs.paddingLeft) + m.actualBoundingBoxRight };
+    inkCache.set(key, ink);
+  }
+  el.style.top = `${-ink.top}px`;
+  el.style.right = `${-(el.offsetWidth - ink.right)}px`;
+}
+
 function heroMark(c, placeName, slots) {
-  if (state.mark === 'line' && c.line) {
+  if (state.mark === 'line' && c.line && c.lineKnown !== false) {
     const tint = c.color?.bg ? ` style="--mono-tint:${esc(c.color.bg)}"` : '';
     return `<span class="monogram line-mark"${tint} aria-hidden="true">${esc(c.line)}</span>`;
   }
-  if (state.mark === 'stop' && slots > 1) return `<span class="monogram" aria-hidden="true">${esc(stopMonogram(placeName))}</span>`;
+  // "Tram number" with no known number falls back to the stop initials, never "?".
+  if ((state.mark === 'stop' || state.mark === 'line') && slots > 1) return `<span class="monogram" aria-hidden="true">${esc(stopMonogram(placeName))}</span>`;
   return '';
 }
 
@@ -220,7 +252,7 @@ function renderHero(plan, now, slots) {
         <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${mins} minutes ${secs % 60} seconds. Tap to switch between minutes and timer">
           ${
             state.countdown
-              ? `<span class="count-num">${mins}:${ss}</span>`
+              ? `<span class="count-num"><span class="timer-text">${mins}:${ss}</span></span>`
               : `<span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>`
           }
         </button>
@@ -839,6 +871,7 @@ function applyUrlParams() {
 }
 
 function init() {
+  document.fonts?.ready.then(() => { inkCache.clear(); render(); });
   applyUrlParams();
   applyTheme();
   applyWatch();
