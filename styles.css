@@ -177,7 +177,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .count-sec { font-size: 14px; color: var(--text-3); margin-left: 4px; }
 .times { text-align: right; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1.6; padding-bottom: 6px; }
 .times b { color: var(--text); font-weight: 600; }
-.delay { font-size: 12px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
+.delay { white-space: nowrap; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
 .delay.late { background: var(--now-soft); color: var(--now); }
 .delay.ok { background: var(--go-soft); color: var(--go); }
 .delay.plan { background: var(--surface-2); color: var(--text-3); }

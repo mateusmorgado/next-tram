@@ -7,7 +7,12 @@
   &nbsp;
   <img src="docs/screenshots/watch.png" alt="NextTram watch view: round face with the countdown and a next-tram button" width="260">
 </p>
-<p align="center"><sub>Phone (dark and light) and watch view. The screenshots use sample departures.</sub></p>
+<p align="center">
+  <img src="docs/screenshots/phone-flow.gif" alt="Animation: tapping a stop card tracks that tram, back to fastest, then the trip back" width="300">
+  &nbsp;
+  <img src="docs/screenshots/watch-flow.gif" alt="Animation: stepping through the next trams on the watch with the arrow buttons" width="300">
+</p>
+<p align="center"><sub>Phone (dark and light) and watch view. Below: tracking a tram and the trip back on the phone, and stepping through trams on the watch. Screenshots use sample departures.</sub></p>
 
 **"When is the next tram?"** answered with zero friction: which of your nearby stops to walk to, which tram you can still catch, and when to leave the house.
 
