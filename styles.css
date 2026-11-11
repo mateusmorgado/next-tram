@@ -178,8 +178,28 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .times { text-align: right; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1.6; padding-bottom: 6px; }
 .times b { color: var(--text); font-weight: 600; }
 .delay { white-space: nowrap; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
+.delay[data-delay-info] { cursor: pointer; }
+.delay.sm { font-size: 11px; padding: 0 5px; margin-right: 6px; }
+.delay.ontime { background: var(--go-soft); color: var(--go); }
+/* Early is the risky one (you can miss it), so it gets its own yellow. */
+.delay.early { background: #fff1b8; color: #7a5a00; }
 .delay.late { background: var(--now-soft); color: var(--now); }
-.delay.ok { background: var(--go-soft); color: var(--go); }
+.delay.late2, .delay.late3 { background: color-mix(in srgb, var(--now) 28%, var(--now-soft)); color: var(--now); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .delay.early { background: #3d3410; color: #ffd84d; } }
+:root[data-theme='dark'] .delay.early { background: #3d3410; color: #ffd84d; }
+
+.trip-list.scrolls { overflow-y: auto; overscroll-behavior: contain; }
+.info-pop {
+  border: 0; border-radius: 18px; padding: 20px; width: min(360px, calc(100vw - 32px));
+  background: var(--surface); color: var(--text); box-shadow: 0 20px 50px rgb(0 0 0 / 0.25);
+}
+.info-pop::backdrop { background: rgb(0 0 0 / 0.4); }
+.info-pop h2 { margin: 0 0 4px; font-size: 18px; }
+.info-pop form { display: grid; gap: 12px; }
+.info-pop .btn { justify-self: end; }
+.delay-info { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.delay-info li { display: grid; grid-template-columns: 76px 1fr; gap: 10px; align-items: start; font-size: 14px; color: var(--text-2); }
+.delay-info .delay { justify-self: start; }
 .delay.plan { background: var(--surface-2); color: var(--text-3); }
 
 .leave {
@@ -296,7 +316,18 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .segmented { display: flex; background: var(--surface-2); border-radius: var(--radius-sm); padding: 3px; gap: 3px; }
 .segmented button { flex: 1; height: 38px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; font-weight: 600; color: var(--text-2); }
 .segmented button[aria-checked='true'] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
-.gps-btn { justify-self: start; margin-top: -8px; }
+.gps-btn { justify-self: start; margin-top: -10px; }
+.gps-btn:disabled { opacity: 0.7; }
+.field-label span.no-pad { margin: 0; font-weight: inherit; color: inherit; }
+.field-label-row { display: flex; align-items: center; justify-content: space-between; }
+.remove-stop { padding: 0 2px; font-size: 13px; color: var(--text-3); }
+.add-stop { display: grid; gap: 6px; }
+.add-stop[hidden] { display: none; }
+.opt-in-btn { justify-self: start; font-size: 13px; padding: 4px 2px; }
+.opt-in-btn[hidden], .back-walk[hidden] { display: none; }
+.back-walk { display: grid; gap: 6px; justify-items: start; margin-top: 4px; }
+.back-walk .field-label-row { width: 100%; }
+.add-stop-btn { justify-self: start; border-style: dashed; color: var(--text-2); }
 .form-error { margin: 0; color: var(--now); font-size: 14px; }
 .sheet-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
 .spacer { flex: 1; }
@@ -371,12 +402,10 @@ html.watch .leave small, html.watch .leave .link { display: none; }
 .rt-short { display: none; }
 html.watch .rt-full { display: none; }
 html.watch .rt-short { display: inline; }
-html.watch #tightNotice { display: none !important; }
 html.watch .topbar { z-index: 2; }
 @media (max-width: 380px) {
   html:not(.no-watch) .rt-full { display: none; }
   html:not(.no-watch) .rt-short { display: inline; }
-  html:not(.no-watch) #tightNotice { display: none !important; }
   html:not(.no-watch) .swap-btn { width: 30px; height: 30px; }
   html:not(.no-watch) .count-num { font-size: 56px; }
   html:not(.no-watch) .count-sec,
@@ -404,6 +433,11 @@ main { display: grid; gap: 14px; }
   pointer-events: none; user-select: none;
   background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--text) var(--mono-alpha, 6%), transparent) 70%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+/* "Tram number" mark: the line's own colour, still faint. */
+.monogram.line-mark {
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--mono-tint, var(--text)) calc(var(--mono-alpha, 6%) * 2.6), transparent) 70%);
+  -webkit-background-clip: text; background-clip: text;
 }
 
 /* "Your pick · back to fastest" sits in the eyebrow, not in the coloured leave bar. */
@@ -434,6 +468,7 @@ html.watch .watch-pos { display: grid; }
 .watch-pos { position: absolute; left: 0; right: 0; bottom: -18px; place-items: center; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 html.watch .monogram,
 html.watch .hero-main .monogram { font-size: 150px; top: 50%; right: 50%; transform: translate(50%, -55%); background: linear-gradient(90deg, transparent 10%, rgb(255 255 255 / 0.06) 75%); -webkit-background-clip: text; background-clip: text; }
+html.watch .monogram.line-mark { background: linear-gradient(90deg, transparent 10%, color-mix(in srgb, var(--mono-tint, #fff) 22%, transparent) 75%); -webkit-background-clip: text; background-clip: text; }
 @media (max-width: 380px) {
   html:not(.no-watch) .monogram { font-size: 130px; top: 50%; right: 50%; transform: translate(50%, -55%); }
   html:not(.no-watch) .watch-nav.next { right: -10px; }

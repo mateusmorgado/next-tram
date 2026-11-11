@@ -5,9 +5,9 @@
   &nbsp;
   <img src="docs/screenshots/phone-light.png" alt="NextTram on a phone, light mode: go to Torgauer Platz, Tram 3 in 6 minutes, leave in 2 minutes" width="270">
   &nbsp;
-  <img src="docs/screenshots/watch-flow.gif" alt="Animation: stepping through the next trams on the watch with the arrow buttons" width="270">
+  <img src="docs/screenshots/watch-addto.gif" alt="Animation: an Add to watch face cycling through Google Assistant (soon), Claude, ChatGPT, Gemini, Alexa and Siri above the watch view stepping through the next trams" width="270">
 </p>
-<p align="center"><sub>Tracking a tram and the trip back, light mode, and stepping through trams on the watch. Screenshots use sample departures.</sub></p>
+<p align="center"><sub>Tracking a tram and the trip back, light mode, and the watch, which you can also ask through your assistant. Screenshots use sample departures.</sub></p>
 
 **"When is the next tram?"** answered with zero friction: which of your nearby stops to walk to, which tram you can still catch, and when to leave the house.
 
@@ -15,17 +15,19 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 
 - an installable **PWA** for Android phones and Wear OS watches,
 - an **MCP server** so Claude (or any MCP client) can answer "next tram",
-- an **Alexa skill** ("Alexa, ask Next Tram when the next tram is").
+- an **Alexa skill** ("Alexa, ask Next Tram when the next tram is"),
+- a **Siri Shortcut** ("Hey Siri, Next Tram") on iPhone and Apple Watch.
 
 All three share one module, [`lib/transit.js`](lib/transit.js).
 
 ## How it decides
 
-- **Two home stops in parallel.** A route can have a Stop 1 and an optional Stop 2, each with its own walk time (default: Edlichstraße 2 min with Tram 7, Torgauer Platz 4 min with Trams 3 and 8). Both are checked at the same time and the results are merged.
-- **Walk buffer.** A tram that leaves sooner than your walk takes is *too tight*. It's skipped, and an amber notice tells you about it ("Earlier: Tram 7 at Edlichstraße in 1 min is too tight for your 2 min walk").
+- **Two home stops in parallel.** A route starts with one stop; **+ Add a second stop** adds another, each with its own walk time (default: Edlichstraße 2 min with Tram 7, Torgauer Platz 4 min with Trams 3 and 8). Both are checked at the same time and the results are merged.
+- **Walk buffer.** A tram that leaves sooner than your walk takes is *too tight*. It's skipped for the countdown and greyed out as "too tight" in the list.
+- **Punctuality as words.** early (yellow), on time, late (1–3 min), +late (4–7), ++late (8+). Tap a label for the explanation.
 - **Leave advice.** "🚶 Leave in 4 min" while you have time, "🏃 Leave now" once departure ≤ walk time.
 - **Tap to track.** Tap any upcoming departure or stop card to lock the countdown onto that tram until it leaves. "Back to fastest" returns to automatic mode.
-- **Trip back (⇅).** Reverses the route: from the destination to *both* home stops, so you take whichever gets you home first. The destination's own walk time is used.
+- **Trip back (⇅).** Reverses the route: from the destination to *both* home stops, so you take whichever gets you home first. No walk by default; **+ Add a walk for the trip back** sets one.
 - **Engines.** Leipzig uses [Transitous](https://transitous.org) (MOTIS, full MDV/LVB data with real time) and falls back to DB HAFAS (`v6.db.transport.rest`). Berlin uses BVG HAFAS (`v6.bvg.transport.rest`) and falls back to Transitous. A departure only counts if it boards *at the stop you chose*, not at another stop nearby.
 - **Stop names.** `edlichstr`, `Edlichstr.`, `Edlichstrasse` and `Edlichstraße` all match. Exact stop IDs are looked up once and remembered on the device.
 
@@ -74,6 +76,12 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 1. Zip `alexa-skill.mjs` together with the `lib/` folder and upload it to an AWS Lambda function (Node.js 20). Handler: `alexa-skill.handler`.
 2. In the Alexa developer console create a custom skill, paste `alexa/interaction-model.en-US.json` (and/or `de-DE`) into the JSON editor, and point the endpoint at the Lambda.
 3. "Alexa, ask Next Tram when the next tram is" / "Alexa, frag Nächste Bahn, wann die nächste Bahn kommt". "…next tram home" uses the trip back.
+
+## Siri (Apple Shortcuts)
+
+1. Open **Shortcuts** on your iPhone → **+** → **Add Action** → **Open URLs**.
+2. URL: `https://next-tram-gray.vercel.app/?route=lej-hbf` (any favorite's id works; add `&back=1` for the trip back).
+3. Name the shortcut **Next Tram**. Now "Hey Siri, Next Tram" opens your route with the countdown, on the iPhone or from the Apple Watch.
 
 ## Files
 

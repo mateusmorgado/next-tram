@@ -151,6 +151,8 @@ test('routeOptions forward and reversed', () => {
   assert.equal(back[0].from.name, 'Hauptbahnhof');
   assert.equal(back[1].to.name, 'Torgauer Platz');
   assert.equal(back[0].walk, 0);
+  // The trip-back walk is opt-in: none unless the route sets one.
+  assert.equal(routeOptions({ ...route, destWalk: 7 }, true)[1].walk, 7);
   // Missing walk becomes the default, not NaN.
   assert.equal(routeOptions({ ...route, stops: [{ stop: route.stops[0].stop }] })[0].walk, 2);
 });
@@ -197,4 +199,56 @@ test('fetchRoute queries both stops in parallel and falls back to HAFAS', async 
 test('fetchRoute throws when every stop fails', async () => {
   const client = createTransitClient({ fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) }) });
   await assert.rejects(fetchRoute(client, DEFAULT_ROUTES[2]), /HTTP 500/);
+});
+
+test('nearbyStops works when transport.rest is down, nearest first, one per name', async () => {
+  const fetchImpl = async (url) => {
+    const u = new URL(url);
+    const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
+    if (u.host.endsWith('transport.rest')) return json({ error: 'down' }, 503);
+    if (u.pathname.endsWith('/map/stops')) {
+      return json([
+        { name: 'Torgauer Platz', stopId: 'q1', lat: 51.3469, lon: 12.4141 },
+        { name: 'Edlichstraße', stopId: 'q2', lat: 51.3447, lon: 12.4149 },
+        { name: 'Edlichstraße', stopId: 'q3', lat: 51.3448, lon: 12.415 },
+        { name: 'Far Away', stopId: 'q4', lat: 51.4, lon: 12.5 },
+      ]);
+    }
+    return json([]);
+  };
+  const client = createTransitClient({ fetchImpl });
+  const near = await client.nearbyStops('leipzig', 51.3449, 12.4152);
+  assert.deepEqual(near.map((s) => s.name), ['Edlichstraße', 'Torgauer Platz']);
+  assert.ok(near[0].distance < near[1].distance);
+  assert.equal(near[0].tid, undefined); // platform IDs are not kept
+});
+
+test('nearbyStops falls back to reverse-geocode', async () => {
+  const fetchImpl = async (url) => {
+    const u = new URL(url);
+    const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
+    if (u.pathname.endsWith('/reverse-geocode')) return json([{ type: 'STOP', name: 'Leipzig, Edlichstraße', lat: 51.3447, lon: 12.4149 }]);
+    return json({}, 404);
+  };
+  const near = await createTransitClient({ fetchImpl }).nearbyStops('leipzig', 51.3449, 12.4152);
+  assert.equal(near[0].name, 'Edlichstraße');
+});
+
+test('delayLabel brackets', async () => {
+  const { delayLabel } = await import('../lib/transit.js');
+  const k = (d) => delayLabel(d).label;
+  assert.deepEqual([-3, -1, 0, 0.4, 1, 3, 4, 7, 8, 25].map(k), ['early', 'early', 'on time', 'on time', 'late', 'late', '+late', '+late', '++late', '++late']);
+});
+
+test('shortDirection abbreviates long directions like a departure board', async () => {
+  const { shortDirection: f } = await import('../lib/transit.js');
+  assert.equal(f('Leipzig, Böhlitz-Ehrenberg'), 'Böhlitz-E.');
+  assert.equal(f('Knautkleeberg'), 'Knautkleeberg');
+  assert.equal(f('Grünau-Nord'), 'Grünau-Nord');
+  assert.equal(f('Markkleeberg-West'), 'Markkleeberg-W.');
+  assert.equal(f('S+U Hauptbahnhof'), 'S+U Hbf');
+  assert.equal(f('Schönefeld, Ost'), 'Schönefeld O.');
+  assert.equal(f('Lützschena, Am Wasserturm'), 'Lützschena');
+  assert.equal(f('S Schöneweide/Sterndamm'), 'S Schöneweide');
+  assert.ok(f('Universitätsklinikum').length <= 16);
 });

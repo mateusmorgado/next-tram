@@ -55,7 +55,6 @@
       </button>
     </section>
 
-    <div class="notice" id="tightNotice" hidden></div>
     <div class="notice notice-error" id="errorNotice" role="alert" hidden></div>
 
     <main>
@@ -93,6 +92,15 @@
     </footer>
   </div>
 
+  <dialog class="info-pop" id="delayInfo" aria-labelledby="delayInfoTitle">
+    <form method="dialog">
+      <h2 id="delayInfoTitle">How punctual is it?</h2>
+      <p class="hint">Live data compared with the timetable.</p>
+      <ul class="delay-info" id="delayInfoList"></ul>
+      <button class="btn btn-primary" value="ok" type="submit">Got it</button>
+    </form>
+  </dialog>
+
   <dialog class="sheet" id="setupSheet" aria-labelledby="setupTitle">
     <form method="dialog" class="sheet-body" id="setupForm" autocomplete="off">
       <div class="sheet-head">
@@ -111,7 +119,7 @@
       </div>
 
       <div class="field stop-field" data-slot="0">
-        <label class="field-label" for="stop0">Stop 1 <span>near home</span></label>
+        <label class="field-label" for="stop0"><span class="no-pad" id="stop0Label">Your stop</span> <span>and your walk to it</span></label>
         <div class="stop-row">
           <div class="combo">
             <input id="stop0" class="input" type="search" placeholder="e.g. Edlichstraße" required />
@@ -125,8 +133,21 @@
         </div>
       </div>
 
-      <div class="field stop-field" data-slot="1">
-        <label class="field-label" for="stop1">Stop 2 <span>optional</span></label>
+      <button type="button" class="text-btn gps-btn" id="gpsBtn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
+        Use the stop nearest to me
+      </button>
+
+      <div class="add-stop" id="addStopWrap">
+        <button type="button" class="btn btn-ghost add-stop-btn" id="addStopBtn">+ Add a second stop</button>
+        <p class="hint">Live between two stops? NextTram checks both and shows whichever gets you there first.</p>
+      </div>
+
+      <div class="field stop-field" data-slot="1" id="stop1Field" hidden>
+        <div class="field-label-row">
+          <label class="field-label" for="stop1">Stop 2 <span>also near you</span></label>
+          <button type="button" class="text-btn remove-stop" id="removeStopBtn" aria-label="Remove second stop">Remove</button>
+        </div>
         <div class="stop-row">
           <div class="combo">
             <input id="stop1" class="input" type="search" placeholder="e.g. Torgauer Platz" />
@@ -140,25 +161,24 @@
         </div>
       </div>
 
-      <button type="button" class="text-btn gps-btn" id="gpsBtn">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
-        Use the two stops nearest to me
-      </button>
-
       <div class="field stop-field" data-slot="dest">
         <label class="field-label" for="stopDest">Destination</label>
-        <div class="stop-row">
-          <div class="combo">
-            <input id="stopDest" class="input" type="search" placeholder="e.g. Hauptbahnhof" required />
-            <ul class="suggestions" role="listbox" hidden></ul>
+        <div class="combo">
+          <input id="stopDest" class="input" type="search" placeholder="e.g. Hauptbahnhof" required />
+          <ul class="suggestions" role="listbox" hidden></ul>
+        </div>
+        <button type="button" class="text-btn opt-in-btn" id="addBackWalkBtn">+ Add a walk for the trip back</button>
+        <div class="back-walk" id="backWalkField" hidden>
+          <div class="field-label-row">
+            <span class="field-label">Walk to this stop on the trip back <span>for ⇅</span></span>
+            <button type="button" class="text-btn remove-stop" id="removeBackWalkBtn" aria-label="Remove trip-back walk">Remove</button>
           </div>
-          <div class="stepper" data-walk="dest" title="Walk to this stop when you go back">
+          <div class="stepper" data-walk="dest">
             <button type="button" data-step="-1" aria-label="Less walking time">−</button>
-            <output>0 min</output>
+            <output>3 min</output>
             <button type="button" data-step="1" aria-label="More walking time">+</button>
           </div>
         </div>
-        <p class="hint">The walk time here is used for the trip back (⇅).</p>
       </div>
 
       <div class="field">
@@ -173,6 +193,15 @@
       <div class="field">
         <label class="field-label" for="routeLabel">Name</label>
         <input id="routeLabel" class="input" type="text" placeholder="e.g. Work" maxlength="24" />
+      </div>
+
+      <div class="field look-field">
+        <span class="field-label">Big mark on the card <span>all routes</span></span>
+        <div class="segmented" id="markSeg" role="radiogroup" aria-label="Big mark on the card">
+          <button type="button" role="radio" data-mark="stop">Stop initials</button>
+          <button type="button" role="radio" data-mark="line">Tram number</button>
+          <button type="button" role="radio" data-mark="none">Off</button>
+        </div>
       </div>
 
       <p class="form-error" id="setupError" hidden></p>

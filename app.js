@@ -7,12 +7,18 @@ import {
   minutesUntil,
   formatClock,
   shortStopName,
+  shortDirection,
   routeOptions,
+  delayLabel,
+  DELAY_BRACKETS,
 } from './lib/transit.js';
 
 const STORAGE_KEY = 'nexttram:v1';
 const REFRESH_MS = 60_000;
+const MAX_UPCOMING = 7;
 const client = createTransitClient();
+/** What the big faint mark in the card's corner shows: stop initials (Ed/TP), the line number, or nothing. */
+const MARKS = ['stop', 'line', 'none'];
 
 // ───────────────────────── State ─────────────────────────
 
@@ -39,7 +45,8 @@ function loadState() {
   } catch {}
   const routes = Array.isArray(saved.routes) && saved.routes.length ? saved.routes : clone(DEFAULT_ROUTES);
   const activeId = routes.some((r) => r.id === saved.activeId) ? saved.activeId : routes[0].id;
-  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch) };
+  const mark = MARKS.includes(saved.mark) ? saved.mark : 'stop';
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark };
 }
 
 function saveState() {
@@ -101,7 +108,6 @@ function render() {
   if (selectedId && !plan.upcoming.some((c) => c.id === selectedId)) selectedId = null;
   lastPlan = plan;
 
-  renderTightNotice(plan, now);
   renderHero(plan, now, slots);
   renderWatchNav(plan, now);
   renderCompare(plan, now, slots);
@@ -136,6 +142,15 @@ function stopMonogram(name) {
   return base(me, 2);
 }
 
+function heroMark(c, placeName, slots) {
+  if (state.mark === 'line' && c.line) {
+    const tint = c.color?.bg ? ` style="--mono-tint:${esc(c.color.bg)}"` : '';
+    return `<span class="monogram line-mark"${tint} aria-hidden="true">${esc(c.line)}</span>`;
+  }
+  if (state.mark === 'stop' && slots > 1) return `<span class="monogram" aria-hidden="true">${esc(stopMonogram(placeName))}</span>`;
+  return '';
+}
+
 /** Watch: step through catchable departures without opening the list. */
 function watchNeighbours(plan, now) {
   const list = plan.upcoming.filter((c) => c.depMs - now >= c.walk * 60000);
@@ -159,18 +174,6 @@ function stepTrip(dir) {
   render();
 }
 
-function renderTightNotice(plan, now) {
-  const el = $('tightNotice');
-  const t = plan.tooTight;
-  if (!t) {
-    el.hidden = true;
-    return;
-  }
-  const mins = minutesUntil(t, now);
-  el.hidden = false;
-  el.innerHTML = `<span>Earlier: <b>${esc(t.lineName)}</b> at ${esc(t.stopName)} in ${mins} min (${formatClock(t.depMs)}) is too tight for your ${t.walk} min walk.</span>`;
-}
-
 function renderHero(plan, now, slots) {
   const el = $('hero');
   const c = plan.hero;
@@ -188,12 +191,11 @@ function renderHero(plan, now, slots) {
 
   let delay = '';
   if (!c.realtime) delay = '<span class="delay plan">scheduled</span>';
-  else if (c.delayMin > 0) delay = `<span class="delay late">+${c.delayMin} min</span>`;
-  else if (c.delayMin < 0) delay = `<span class="delay ok">${c.delayMin} min</span>`;
-  else delay = '<span class="delay ok">on time</span>';
+  else delay = delayChip(c.delayMin);
 
   let leave;
-  if (advice.atStop) leave = `<div class="leave idle">You're at the stop</div>`;
+  // No walk set for the trip back: you're already at the stop, so no leave advice at all.
+  if (advice.atStop) leave = reversed ? '' : `<div class="leave idle">You're at the stop</div>`;
   else if (advice.now)
     leave = `<div class="leave now">🏃 Leave now<small>${plural(c.walk, 'min')} walk${advice.late ? ', hurry' : ''}</small></div>`;
   else
@@ -201,7 +203,7 @@ function renderHero(plan, now, slots) {
   const eyebrow = reversed ? `From ${esc(c.stopName)} to` : 'Go to stop';
   const placeName = reversed ? c.toName : c.stopName;
   const place = esc(placeName);
-  const mark = slots > 1 ? `<span class="monogram" aria-hidden="true">${esc(stopMonogram(placeName))}</span>` : '';
+  const mark = heroMark(c, placeName, slots);
   const pick = plan.manual
     ? `<span class="pick">Your pick · <button class="link" type="button" id="autoBtn">back to fastest</button></span>`
     : eyebrow;
@@ -210,7 +212,7 @@ function renderHero(plan, now, slots) {
       ${mark}
       <div class="hero-eyebrow">${pick}</div>
       <div class="hero-stop">${place}</div>
-      <div class="hero-line">${badge(c, 'lg')}<span class="dir">→ ${esc(c.direction)}</span></div>
+      <div class="hero-line">${badge(c, 'lg')}<span class="dir" title="${esc(c.direction)}">→ ${esc(shortDirection(c.direction))}</span></div>
       <div class="hero-count">
         <div class="count" aria-label="${mins} minutes">
           <span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>
@@ -266,18 +268,48 @@ function renderUpcoming(plan, now) {
       const sub = [
         multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '',
         c.arrMs ? `arr ${formatClock(c.arrMs)}` : '',
-        c.realtime && c.delayMin > 0 ? `+${c.delayMin}` : '',
       ]
         .filter(Boolean)
         .join(' · ');
+      const d = c.realtime ? delayLabel(c.delayMin) : null;
+      const chip = d && d.key !== 'ontime' ? delayChip(c.delayMin, 'sm') : '';
       return `<li><button class="trip ${tight ? 'tight' : ''} ${selected ? 'selected' : ''}" type="button" data-trip="${esc(c.id)}">
         <span class="t">${formatClock(c.depMs)}</span>
         ${badge(c)}
-        <span class="info"><span class="dir">${esc(c.direction)}</span><span class="sub">${esc(sub)}</span></span>
+        <span class="info"><span class="dir" title="${esc(c.direction)}">${esc(shortDirection(c.direction))}</span><span class="sub">${chip}${esc(sub)}</span></span>
         <span class="in">${tight ? 'too tight' : `${minutesUntil(c, now)} min`}</span>
       </button></li>`;
     })
     .join('');
+  capUpcoming();
+}
+
+/** Cap the list at 7 visible rows; the rest scrolls inside it. */
+function capUpcoming() {
+  const list = $('tripList');
+  const rows = list.children;
+  if (rows.length <= MAX_UPCOMING) {
+    list.style.maxHeight = '';
+    list.classList.remove('scrolls');
+    return;
+  }
+  const last = rows[MAX_UPCOMING - 1];
+  // A sliver of the 8th row peeks out so it's clear the list scrolls.
+  const bottom = last.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop;
+  list.style.maxHeight = `${Math.round(bottom + 14)}px`;
+  list.classList.add('scrolls');
+}
+
+function delayChip(delayMin, size = '') {
+  const d = delayLabel(delayMin);
+  return `<span class="delay ${d.key} ${size}" role="button" tabindex="0" data-delay-info title="What does ${esc(d.label)} mean?">${esc(d.label)}</span>`;
+}
+
+function openDelayInfo() {
+  $('delayInfoList').innerHTML =
+    DELAY_BRACKETS.map((b) => `<li><span class="delay ${b.key}">${esc(b.label)}</span><span>${esc(b.text)}</span></li>`).join('') +
+    `<li><span class="delay plan">scheduled</span><span>No live data for this tram, only the timetable.</span></li>`;
+  $('delayInfo').showModal();
 }
 
 function renderStatus(now) {
@@ -369,7 +401,6 @@ function resetData() {
   $('hero').innerHTML = '<div class="hero-skeleton"><div class="sk sk-line"></div><div class="sk sk-big"></div><div class="sk sk-line short"></div></div>';
   $('compare').hidden = true;
   $('upcomingSection').hidden = true;
-  $('tightNotice').hidden = true;
   $('errorNotice').hidden = true;
 }
 
@@ -404,6 +435,22 @@ function applyWatch() {
 
 let draft = null;
 let editingId = null;
+let secondStop = false; // the "Stop 2" field only shows after "+ Add a second stop"
+let backWalk = false; // the trip-back walk only shows after "+ Add a walk for the trip back"
+
+function setBackWalk(on) {
+  backWalk = on;
+  draft.destWalk = on ? Math.max(1, Number(draft.destWalk) || 3) : 0;
+  syncSetupForm();
+}
+
+function setSecondStop(on) {
+  secondStop = on;
+  if (on && draft.stops.length < 2) draft.stops.push({ stop: null, walk: 4 });
+  if (!on) draft.stops = draft.stops.slice(0, 1);
+  syncSetupForm();
+  if (on) $('stop1').focus();
+}
 
 function openSetup(routeId) {
   const base = routeId ? state.routes.find((r) => r.id === routeId) : null;
@@ -416,10 +463,13 @@ function openSetup(routeId) {
         city: activeRoute().city,
         stops: [{ stop: null, walk: 2 }],
         dest: null,
-        destWalk: 0,
         modes: DEFAULT_MODE_FILTER,
       };
-  while (draft.stops.length < 2) draft.stops.push({ stop: null, walk: draft.stops.length ? 4 : 2 });
+  backWalk = Number(draft.destWalk) > 0;
+  if (!draft.stops.length) draft.stops.push({ stop: null, walk: 2 });
+  draft.stops = draft.stops.slice(0, 2);
+  secondStop = draft.stops.length > 1 && Boolean(draft.stops[1].stop);
+  if (!secondStop) draft.stops = draft.stops.slice(0, 1);
   $('setupTitle').textContent = base ? 'Edit route' : 'New route';
   $('deleteRouteBtn').hidden = !base || state.routes.length < 2;
   $('pinBtn').hidden = !base;
@@ -436,6 +486,12 @@ function syncSetupForm() {
   );
   $('stop0').value = draft.stops[0]?.stop ? shortStopName(draft.stops[0].stop.name) : '';
   $('stop1').value = draft.stops[1]?.stop ? shortStopName(draft.stops[1].stop.name) : '';
+  $('stop1Field').hidden = !secondStop;
+  $('addStopWrap').hidden = secondStop;
+  $('backWalkField').hidden = !backWalk;
+  $('addBackWalkBtn').hidden = backWalk;
+  $('stop0Label').textContent = secondStop ? 'Stop 1' : 'Your stop';
+  document.querySelectorAll('#markSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mark === state.mark)));
   $('stopDest').value = draft.dest ? shortStopName(draft.dest.name) : '';
   $('routeLabel').value = draft.label || '';
   syncSteppers();
@@ -452,7 +508,7 @@ function syncSteppers() {
 function stepWalk(key, delta) {
   const clamp = (v) => Math.max(0, Math.min(30, (Number(v) || 0) + delta));
   if (key === 'dest') draft.destWalk = clamp(draft.destWalk);
-  else draft.stops[Number(key)].walk = clamp(draft.stops[Number(key)].walk);
+  else if (draft.stops[Number(key)]) draft.stops[Number(key)].walk = clamp(draft.stops[Number(key)].walk);
   syncSteppers();
 }
 
@@ -465,7 +521,7 @@ function readDraft() {
     return { name: v };
   };
   draft.stops[0].stop = typed('stop0', draft.stops[0].stop);
-  draft.stops[1].stop = typed('stop1', draft.stops[1].stop);
+  if (secondStop && draft.stops[1]) draft.stops[1].stop = typed('stop1', draft.stops[1].stop);
   draft.dest = typed('stopDest', draft.dest);
   draft.label = $('routeLabel').value.trim();
   const route = clone(draft);
@@ -583,31 +639,48 @@ function useGps() {
   const btn = $('gpsBtn');
   const label = btn.lastChild;
   const original = label.textContent;
+  const done = () => {
+    label.textContent = original;
+    btn.disabled = false;
+  };
   const fail = (msg) => {
     $('setupError').textContent = msg;
     $('setupError').hidden = false;
-    label.textContent = original;
+    done();
   };
+  if (!window.isSecureContext) return fail('Location only works over https (or on localhost).');
   if (!navigator.geolocation) return fail('Location is not available in this browser.');
-  label.textContent = ' Finding stops near you…';
+  $('setupError').hidden = true;
+  btn.disabled = true;
+  label.textContent = ' Finding your location…';
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
+      label.textContent = ' Looking for stops nearby…';
       try {
-        const near = await client.nearbyStops(draft.city, pos.coords.latitude, pos.coords.longitude);
-        if (!near.length) return fail('No stops found near you in this city.');
-        draft.stops[0].stop = { name: near[0].name, hafasId: near[0].hafasId, lat: near[0].lat, lon: near[0].lon };
-        if (near[1]) draft.stops[1].stop = { name: near[1].name, hafasId: near[1].hafasId, lat: near[1].lat, lon: near[1].lon };
+        const { latitude: lat, longitude: lon } = pos.coords;
+        const near = await client.nearbyStops(draft.city, lat, lon);
+        if (!near.length) return fail(`No ${CITIES[draft.city]?.label || ''} stops within about 1 km of you. Type your stop instead.`);
         const walkMin = (m) => Math.max(1, Math.round((m || 0) / 80)); // ~80 m per minute
-        draft.stops[0].walk = walkMin(near[0].distance);
-        if (near[1]) draft.stops[1].walk = walkMin(near[1].distance);
+        const asStop = (s) => stripUndefined({ name: s.name, tid: s.tid, hafasId: s.hafasId, lat: s.lat, lon: s.lon });
+        draft.stops[0] = { stop: asStop(near[0]), walk: walkMin(near[0].distance) };
+        // Only fill Stop 2 if the person already opened it.
+        if (secondStop && near[1]) draft.stops[1] = { stop: asStop(near[1]), walk: walkMin(near[1].distance) };
         syncSetupForm();
-        label.textContent = original;
+        done();
       } catch (e) {
-        fail(`Couldn't find nearby stops (${e.message}).`);
+        fail(`Couldn't look up stops near you (${e.message}). Type your stop instead.`);
       }
     },
-    () => fail('Location permission was denied.'),
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    (err) => {
+      const why =
+        err.code === 1
+          ? 'Location permission is blocked. Allow it for this site in your browser settings, or type your stop.'
+          : err.code === 3
+            ? 'Finding your location took too long. Try again outside or type your stop.'
+            : "Your phone couldn't tell where you are. Is location turned on?";
+      fail(why);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
   );
 }
 
@@ -631,6 +704,11 @@ function wire() {
   $('nextBtn').addEventListener('click', () => stepTrip(1));
   $('prevBtn').addEventListener('click', () => stepTrip(-1));
   document.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('[data-delay-info]')) {
+      e.preventDefault();
+      openDelayInfo();
+      return;
+    }
     if ($('setupSheet').open || e.target.closest?.('input')) return;
     if (e.key === 'ArrowRight') stepTrip(1);
     if (e.key === 'ArrowLeft') stepTrip(-1);
@@ -656,6 +734,11 @@ function wire() {
   });
 
   document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-delay-info]')) {
+      e.stopPropagation();
+      openDelayInfo();
+      return;
+    }
     const trip = e.target.closest('[data-trip]');
     if (trip && trip.getAttribute('aria-disabled') !== 'true') {
       selectedId = trip.dataset.trip;
@@ -689,7 +772,7 @@ function wire() {
     const b = e.target.closest('[data-city]');
     if (!b || b.dataset.city === draft.city) return;
     draft.city = b.dataset.city;
-    draft.stops = [{ stop: null, walk: 2 }, { stop: null, walk: 4 }];
+    draft.stops = secondStop ? [{ stop: null, walk: 2 }, { stop: null, walk: 4 }] : [{ stop: null, walk: 2 }];
     draft.dest = null;
     syncSetupForm();
   });
@@ -706,7 +789,19 @@ function wire() {
     }),
   );
   setupCombo('stop0', (s) => (draft.stops[0].stop = s));
-  setupCombo('stop1', (s) => (draft.stops[1].stop = s));
+  setupCombo('stop1', (s) => draft.stops[1] && (draft.stops[1].stop = s));
+  $('addStopBtn').addEventListener('click', () => setSecondStop(true));
+  $('removeStopBtn').addEventListener('click', () => setSecondStop(false));
+  $('addBackWalkBtn').addEventListener('click', () => setBackWalk(true));
+  $('removeBackWalkBtn').addEventListener('click', () => setBackWalk(false));
+  $('markSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mark]');
+    if (!b) return;
+    state.mark = b.dataset.mark; // a look setting: applies right away, to every route
+    saveState();
+    syncSetupForm();
+    render();
+  });
   setupCombo('stopDest', (s) => (draft.dest = s));
   $('gpsBtn').addEventListener('click', useGps);
   $('saveBtn').addEventListener('click', () => saveSetup(false));
