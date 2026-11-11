@@ -5,7 +5,7 @@
   &nbsp;
   <img src="docs/screenshots/phone-light.png" alt="NextTram on a phone, light mode: go to Torgauer Platz, Tram 3 in 6 minutes, leave in 2 minutes" width="270">
   &nbsp;
-  <img src="docs/screenshots/watch-addto.gif" alt="Animation: an Add to watch face cycling through Claude, ChatGPT, Gemini, Alexa and Siri above the watch view stepping through the next trams" width="270">
+  <img src="docs/screenshots/watch-addto.gif" alt="Animation: an Add to watch face cycling through Google Assistant (soon), Claude, ChatGPT, Gemini, Alexa and Siri above the watch view stepping through the next trams" width="270">
 </p>
 <p align="center"><sub>Tracking a tram and the trip back, light mode, and the watch, which you can also ask through your assistant. Screenshots use sample departures.</sub></p>
 
