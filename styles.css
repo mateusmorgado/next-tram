@@ -483,11 +483,12 @@ html.watch .monogram.line-mark { background: linear-gradient(90deg, transparent 
 html.watch .times,
 html.watch .watch-pos { display: none !important; }
 html.watch .hero, html.watch .hero-main { overflow: visible; }
+/* The mark fills almost the whole face, centred on the screen, faint behind everything. */
 html.watch .monogram,
-html.watch .hero-main .monogram { top: -125px; transform: translate(50%, 0); }
+html.watch .hero-main .monogram { position: fixed; font-size: 76vmin; top: 50%; right: 50%; transform: translate(50%, -50%); z-index: 0; }
 @media (max-width: 380px) {
   html:not(.no-watch) .times,
   html:not(.no-watch) .watch-pos { display: none !important; }
   html:not(.no-watch) .hero, html:not(.no-watch) .hero-main { overflow: visible; }
-  html:not(.no-watch) .monogram { top: -110px; transform: translate(50%, 0); }
+  html:not(.no-watch) .monogram { position: fixed; font-size: 76vmin; top: 50%; right: 50%; transform: translate(50%, -50%); z-index: 0; }
 }
