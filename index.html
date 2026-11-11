@@ -47,6 +47,18 @@
       </div>
     </header>
 
+    <aside class="install-card" id="installCard" aria-label="Install NextTram" hidden>
+      <img class="install-icon" src="icons/icon.svg" alt="" width="40" height="40" />
+      <div class="install-text">
+        <strong>Install NextTram</strong>
+        <span id="installHint">Opens like an app, straight from your home screen.</span>
+      </div>
+      <button class="btn btn-primary install-go" id="installGo" type="button">Install</button>
+      <button class="install-x" id="installX" type="button" aria-label="Hide install card" title="Hide">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </aside>
+
     <nav class="favs" id="favBar" aria-label="Favorite routes"></nav>
 
     <section class="route" aria-label="Current route">
