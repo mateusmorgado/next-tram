@@ -1,0 +1,9 @@
+# Only the PWA is deployed. The MCP server, Alexa skill, tests and docs stay in the repo.
+.github
+alexa
+alexa-skill.mjs
+mcp-server.mjs
+scripts
+test
+docs
+README.md
