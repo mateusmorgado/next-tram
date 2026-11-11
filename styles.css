@@ -184,8 +184,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 /* Early is the risky one (you can miss it), so it gets its own yellow. */
 .delay.early { background: #fff1b8; color: #7a5a00; }
 .delay.late { background: var(--now-soft); color: var(--now); }
-.delay.late2 { background: color-mix(in srgb, var(--now) 28%, var(--now-soft)); color: var(--now); }
-.delay.late3 { background: var(--now); color: #fff; }
+.delay.late2, .delay.late3 { background: color-mix(in srgb, var(--now) 28%, var(--now-soft)); color: var(--now); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .delay.early { background: #3d3410; color: #ffd84d; } }
 :root[data-theme='dark'] .delay.early { background: #3d3410; color: #ffd84d; }
 
