@@ -62,7 +62,7 @@ function loadState() {
   }
   const activeId = routes.some((r) => r.id === saved.activeId) ? saved.activeId : routes[0].id;
   const mark = MARKS.includes(saved.mark) ? saved.mark : 'stop';
-  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '' };
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '', installHidden: Boolean(saved.installHidden) };
 }
 
 function saveState() {
@@ -583,6 +583,55 @@ function applyWatch() {
   $('watchBtn').setAttribute('aria-pressed', String(state.watch));
 }
 
+// ───────────────────────── Install card ─────────────────────────
+// Chrome/Edge/Android hand us an install prompt; iPhone Safari has none, so we show the steps instead.
+
+let installPrompt = null;
+
+function isInstalled() {
+  return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+}
+
+function showInstallCard(mode) {
+  if (state.installHidden || isInstalled()) return;
+  const ios = mode === 'ios';
+  $('installHint').textContent = ios
+    ? 'Tap Share, then “Add to Home Screen”.'
+    : mode === 'menu'
+      ? 'Open the browser menu and choose “Add to Home screen”.'
+      : 'Opens like an app, straight from your home screen.';
+  $('installGo').hidden = mode !== 'prompt';
+  $('installCard').hidden = false;
+}
+
+function hideInstallCard(remember) {
+  $('installCard').hidden = true;
+  if (remember) { state.installHidden = true; saveState(); }
+}
+
+function setupInstall() {
+  if (state.installHidden || isInstalled()) return;
+  addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    showInstallCard('prompt');
+  });
+  addEventListener('appinstalled', () => hideInstallCard(true));
+  $('installGo').addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice.catch(() => ({}));
+    installPrompt = null;
+    if (outcome === 'accepted') hideInstallCard(true);
+    else showInstallCard('menu');
+  });
+  $('installX').addEventListener('click', () => hideInstallCard(true));
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios) showInstallCard('ios');
+  else if (/Android|Mobile/.test(ua)) setTimeout(() => { if (!installPrompt) showInstallCard('menu'); }, 2500);
+}
+
 // ───────────────────────── Setup sheet ─────────────────────────
 
 let draft = null;
@@ -1005,6 +1054,7 @@ function init() {
   scheduleRefresh();
   setInterval(render, 1000);
   scheduleSync();
+  setupInstall();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
