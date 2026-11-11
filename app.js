@@ -169,8 +169,10 @@ function fitMonogram() {
     ink = { top: baseline - m.actualBoundingBoxAscent, right: parseFloat(cs.paddingLeft) + m.actualBoundingBoxRight };
     inkCache.set(key, ink);
   }
-  el.style.top = `${-ink.top}px`;
-  el.style.right = `${-(el.offsetWidth - ink.right)}px`;
+  // Overshoot the corner a little so the card's border clips the letters: no sliver of gap on any font.
+  const bleed = parseFloat(cs.fontSize) * 0.07;
+  el.style.top = `${-ink.top - bleed}px`;
+  el.style.right = `${-(el.offsetWidth - ink.right) - bleed}px`;
 }
 
 function heroMark(c, placeName, slots) {
