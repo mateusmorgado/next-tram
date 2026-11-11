@@ -1,5 +1,5 @@
 // NextTram service worker: app shell works offline, live data always comes from the network.
-const VERSION = 'nexttram-v9';
+const VERSION = 'nexttram-v10';
 const SHELL = [
   './',
   'index.html',
