@@ -269,3 +269,19 @@ test('line names never show "?" and handle Leipzig "E" trams', async () => {
   assert.equal(c.line, 'E');
   assert.equal(c.lineName, 'Tram E');
 });
+
+test('a tram boarding at another stop is dropped even when both IDs are DELFI IDs', async () => {
+  const { sameStation } = await import('../lib/transit.js');
+  assert.ok(sameStation('de-DELFI_de:14713:11508:1:1', 'de-DELFI_de:14713:11508'));
+  assert.ok(sameStation('de-DELFI_de:14713:11508:1:1', 'de-DELFI_de:14713:11508:2:2'));
+  assert.ok(!sameStation('de-DELFI_de:14713:11509:1:1', 'de-DELFI_de:14713:11508'));
+  assert.ok(!sameStation('q1', 'q2'));
+  const data = {
+    itineraries: [
+      { endTime: iso(16), legs: [motisLeg({})] },
+      { endTime: iso(17), legs: [motisLeg({ from: { name: 'Torgauer Platz', stopId: 'de-DELFI_de:14713:11509:2:2' }, tripId: 'other' })] },
+    ],
+  };
+  const list = parseMotisPlan(data, { from: { name: 'Edlichstraße', tid: 'de-DELFI_de:14713:11508' }, filter: 'tram_bus' });
+  assert.deepEqual(list.map((c) => c.tripKey), ['trip-7a']);
+});

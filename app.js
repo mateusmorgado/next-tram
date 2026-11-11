@@ -15,6 +15,8 @@ import {
 
 const STORAGE_KEY = 'nexttram:v1';
 const REFRESH_MS = 60_000;
+/** Wait before retrying on its own after 1, 2, 3… failed loads in a row. */
+const RETRY_MS = [15_000, 30_000, 60_000, 120_000, 300_000];
 const MAX_UPCOMING = 7;
 const client = createTransitClient();
 /** What the big faint mark in the card's corner shows: stop initials (Ed/TP), the line number, or nothing. */
@@ -25,7 +27,11 @@ const MARKS = ['stop', 'line', 'none'];
 const state = loadState();
 let reversed = false;
 let connections = [];
-let lastFetch = 0;
+let lastFetch = 0; // last successful load
+let settled = false; // the first answer (data or an error) has arrived
+let loadFailed = false; // the latest attempt failed
+let failCount = 0;
+let lastAttempt = 0;
 let lastSource = '';
 let selectedId = null;
 let loading = false;
@@ -66,6 +72,14 @@ const badge = (c, size = '') => {
   const style = c.color ? ` style="background:${esc(c.color.bg)};color:${esc(c.color.fg)}"` : '';
   return `<span class="badge ${esc(c.product)} ${size}"${style}>${esc(c.line)}</span>`;
 };
+/** Only touch the DOM when the markup changed, so taps and focus survive the once-a-second tick. */
+const htmlCache = new WeakMap();
+function setHtml(el, html) {
+  if (htmlCache.get(el) === html) return false;
+  htmlCache.set(el, html);
+  el.innerHTML = html;
+  return true;
+}
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 // ───────────────────────── Rendering ─────────────────────────
@@ -116,7 +130,7 @@ function render() {
   renderStatus(now);
 
   // When the shown tram leaves, fetch fresh data.
-  if (lastFetch && !loading && plan.hero && plan.hero.depMs <= now + 1000) refresh();
+  if (lastFetch && plan.hero && plan.hero.depMs <= now + 1000) autoRefresh(true);
 }
 
 /**
@@ -213,10 +227,23 @@ function renderHero(plan, now, slots) {
   const el = $('hero');
   const c = plan.hero;
   if (!c) {
-    if (!lastFetch) return; // keep skeleton until the first answer
-    el.innerHTML = `<div class="hero-empty"><strong>No catchable departures</strong>${
-      connections.length ? 'Nothing you can still reach in the next hour or two.' : 'No trams or buses found for this route right now.'
-    }</div>`;
+    if (!settled) return; // keep skeleton until the first answer
+    if (loadFailed && !connections.length) {
+      const offline = navigator.onLine === false;
+      setHtml(
+        el,
+        `<div class="hero-empty" id="heroMain"><strong>${offline ? "You're offline" : "Couldn't load departures"}</strong>${
+          offline ? "Departures will load when you're back online." : 'Tap to try again.'
+        }</div>`,
+      );
+      return;
+    }
+    setHtml(
+      el,
+      `<div class="hero-empty"><strong>No catchable departures</strong>${
+        connections.length ? 'Nothing you can still reach in the next hour or two.' : 'No trams or buses found for this route right now.'
+      }</div>`,
+    );
     return;
   }
   const secs = Math.max(0, Math.floor((c.depMs - now) / 1000));
@@ -245,18 +272,18 @@ function renderHero(plan, now, slots) {
   const pick = plan.manual
     ? `<span class="pick">Your pick · <button class="link" type="button" id="autoBtn">back to fastest</button></span>`
     : eyebrow;
-  el.innerHTML = `
+  const html = `
     <div class="hero-main" id="heroMain" title="Tap to refresh">
       ${mark}
       <div class="hero-eyebrow">${pick}</div>
       <div class="hero-stop">${place}</div>
       <div class="hero-line">${badge(c, 'lg')}<span class="dir" title="${esc(c.direction)}">→ ${esc(shortDirection(c.direction))}</span></div>
       <div class="hero-count">
-        <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${mins} minutes ${secs % 60} seconds. Tap to switch between minutes and timer">
+        <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${plural(mins, 'minute')}. Tap to switch between minutes and timer">
           ${
             state.countdown
-              ? `<span class="count-num"><span class="timer-text">${mins}:${ss}</span></span><span class="count-unit" aria-hidden="true">&#8203;</span>`
-              : `<span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>`
+              ? `<span class="count-num"><span class="timer-text" data-tick="clock"></span></span><span class="count-unit" aria-hidden="true">&#8203;</span>`
+              : `<span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec" data-tick="clock"></span>`
           }
         </button>
         <div class="times">
@@ -266,6 +293,12 @@ function renderHero(plan, now, slots) {
       </div>
     </div>
     ${leave}`;
+  setHtml(el, html);
+  // The seconds tick in place; everything else only changes about once a minute.
+  el.querySelectorAll('[data-tick]').forEach((t) => {
+    const text = t.dataset.tick === 'ss' ? ss : `${mins}:${ss}`;
+    if (t.textContent !== text) t.textContent = text;
+  });
 }
 
 function renderCompare(plan, now, slots) {
@@ -276,7 +309,7 @@ function renderCompare(plan, now, slots) {
   }
   const options = routeOptions(activeRoute(), reversed);
   el.hidden = false;
-  el.innerHTML = plan.perSlot
+  const html = plan.perSlot
     .map((p) => {
       const o = options[p.slot];
       const name = reversed ? shortStopName(o.to.name) : shortStopName(o.from.name);
@@ -293,6 +326,7 @@ function renderCompare(plan, now, slots) {
       </button>`;
     })
     .join('');
+  setHtml(el, html);
 }
 
 function renderUpcoming(plan, now) {
@@ -301,9 +335,10 @@ function renderUpcoming(plan, now) {
     section.hidden = true;
     return;
   }
+  const wasHidden = section.hidden;
   section.hidden = false;
   const multi = routeOptions(activeRoute(), reversed).length > 1;
-  $('tripList').innerHTML = plan.upcoming
+  const html = plan.upcoming
     .map((c) => {
       const tight = c.depMs - now < c.walk * 60000;
       const selected = plan.hero && plan.hero.id === c.id;
@@ -323,7 +358,7 @@ function renderUpcoming(plan, now) {
       </button></li>`;
     })
     .join('');
-  capUpcoming();
+  if (setHtml($('tripList'), html) || wasHidden) capUpcoming();
 }
 
 /** Cap the list at 7 visible rows; the rest scrolls inside it. */
@@ -357,7 +392,7 @@ function openDelayInfo() {
 function renderStatus(now) {
   const el = $('statusText');
   if (loading && !lastFetch) el.textContent = 'Loading live departures…';
-  else if (!lastFetch) el.textContent = '';
+  else if (!lastFetch) el.textContent = loadFailed ? 'Not loaded yet' : '';
   else {
     const ago = Math.round((now - lastFetch) / 1000);
     const when = ago < 10 ? 'just now' : ago < 60 ? `${ago}s ago` : `${Math.floor(ago / 60)} min ago`;
@@ -372,12 +407,15 @@ async function refresh() {
   const route = activeRoute();
   const token = ++fetchToken;
   loading = true;
+  lastAttempt = Date.now();
   renderStatus(Date.now());
   try {
     const result = await fetchRoute(client, route, { reversed });
     if (token !== fetchToken) return;
     connections = result.connections;
     lastFetch = Date.now();
+    loadFailed = false;
+    failCount = 0;
     const sources = new Set(result.connections.map((c) => c.source));
     lastSource = [...sources].map((s) => (s === 'transitous' ? 'Transitous' : CITIES[route.city]?.key === 'berlin' ? 'BVG' : 'DB')).join(' + ');
     cacheResolvedIds(route, result.options);
@@ -399,13 +437,30 @@ async function refresh() {
       ? "You're offline. Departures will load when you're back online."
       : `Couldn't load live departures (${e.message}). Tap Refresh to try again.`;
     $('errorNotice').hidden = false;
-    if (!lastFetch) lastFetch = Date.now();
+    loadFailed = true;
+    failCount++;
   } finally {
     if (token === fetchToken) {
       loading = false;
+      settled = true;
       render();
     }
   }
+}
+
+/**
+ * Refresh started by the app itself (timer, tab shown again, tram just left). It never
+ * interrupts a request that is still running, and it backs off while the APIs are failing.
+ * Taps on Refresh call refresh() directly and always go through.
+ */
+function autoRefresh(dueNow = false) {
+  if (loading || document.visibilityState !== 'visible') return;
+  const now = Date.now();
+  if (failCount) {
+    if (now - lastAttempt < RETRY_MS[Math.min(failCount, RETRY_MS.length) - 1]) return;
+  } else if (!dueNow && now - lastFetch < REFRESH_MS) return;
+  else if (now - lastAttempt < 5000) return;
+  refresh();
 }
 
 /** Remember the stop IDs the APIs gave us, so the next request skips the lookup. */
@@ -425,8 +480,8 @@ function stripUndefined(o) {
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v != null));
 }
 
-function switchRoute(id) {
-  if (id === state.activeId && lastFetch) return;
+function switchRoute(id, force = false) {
+  if (!force && id === state.activeId && lastFetch) return;
   state.activeId = id;
   reversed = false;
   resetData();
@@ -439,8 +494,11 @@ function switchRoute(id) {
 function resetData() {
   connections = [];
   lastFetch = 0;
+  settled = false;
+  loadFailed = false;
+  failCount = 0;
   selectedId = null;
-  $('hero').innerHTML = '<div class="hero-skeleton"><div class="sk sk-line"></div><div class="sk sk-big"></div><div class="sk sk-line short"></div></div>';
+  setHtml($('hero'), '<div class="hero-skeleton"><div class="sk sk-line"></div><div class="sk sk-big"></div><div class="sk sk-line short"></div></div>');
   $('compare').hidden = true;
   $('upcomingSection').hidden = true;
   $('errorNotice').hidden = true;
@@ -448,9 +506,7 @@ function resetData() {
 
 function scheduleRefresh() {
   clearInterval(refreshTimer);
-  refreshTimer = setInterval(() => {
-    if (document.visibilityState === 'visible' && Date.now() - lastFetch >= REFRESH_MS) refresh();
-  }, 5000);
+  refreshTimer = setInterval(() => autoRefresh(), 5000);
 }
 
 // ───────────────────────── Theme & watch ─────────────────────────
@@ -606,11 +662,8 @@ function saveSetup(asNew) {
 function deleteRoute() {
   if (!editingId || state.routes.length < 2) return;
   state.routes = state.routes.filter((r) => r.id !== editingId);
-  state.activeId = state.routes[0].id;
-  saveState();
   $('setupSheet').close();
-  switchRoute(state.activeId);
-  renderFavs();
+  switchRoute(state.routes[0].id, true); // the deleted route was on screen: always reload
 }
 
 /** Autocomplete for one stop input. */
@@ -640,17 +693,18 @@ function setupCombo(inputId, onPick) {
 
   input.addEventListener('input', () => {
     clearTimeout(timer);
+    const my = ++seq; // any answer to an older keystroke is ignored from here on
     const q = input.value.trim();
     if (q.length < 2) return close();
     timer = setTimeout(async () => {
-      const my = ++seq;
+      items = []; // nothing to pick while "Searching…" is showing
       show('<li class="muted">Searching…</li>');
+      let found = [];
       try {
-        items = await client.searchStops(draft.city, q);
-      } catch {
-        items = [];
-      }
+        found = await client.searchStops(draft.city, q);
+      } catch {}
       if (my !== seq) return;
+      items = found;
       if (!items.length) return show('<li class="muted">No stops found</li>');
       active = -1;
       show(items.map((s, i) => `<li role="option" data-i="${i}" aria-selected="false">${esc(s.name)}</li>`).join(''));
@@ -742,7 +796,7 @@ function wire() {
     renderRoute();
     refresh();
   });
-  $('refreshBtn').addEventListener('click', refresh);
+  $('refreshBtn').addEventListener('click', () => refresh());
   $('nextBtn').addEventListener('click', () => stepTrip(1));
   $('prevBtn').addEventListener('click', () => stepTrip(-1));
   document.addEventListener('keydown', (e) => {
@@ -861,9 +915,10 @@ function wire() {
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && Date.now() - lastFetch > 30_000) refresh();
+    if (document.visibilityState === 'visible' && Date.now() - lastFetch > 30_000) autoRefresh(true);
   });
-  window.addEventListener('online', refresh);
+  window.addEventListener('online', () => refresh());
+  window.addEventListener('resize', capUpcoming);
 }
 
 function applyUrlParams() {
