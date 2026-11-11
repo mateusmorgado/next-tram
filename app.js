@@ -171,7 +171,8 @@ function fitMonogram() {
   }
   // Overshoot the corner a little so the card's border clips the letters: no sliver of gap on any font.
   const bleed = parseFloat(cs.fontSize) * 0.07;
-  el.style.top = `${-ink.top - bleed}px`;
+  const bleedTop = parseFloat(cs.fontSize) * 0.015; // just past the edge, so the top bar of a T stays full
+  el.style.top = `${-ink.top - bleedTop}px`;
   el.style.right = `${-(el.offsetWidth - ink.right) - bleed}px`;
 }
 
