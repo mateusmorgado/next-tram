@@ -46,7 +46,7 @@ function loadState() {
   const routes = Array.isArray(saved.routes) && saved.routes.length ? saved.routes : clone(DEFAULT_ROUTES);
   const activeId = routes.some((r) => r.id === saved.activeId) ? saved.activeId : routes[0].id;
   const mark = MARKS.includes(saved.mark) ? saved.mark : 'stop';
-  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark };
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, countdown: Boolean(saved.countdown) };
 }
 
 function saveState() {
@@ -199,7 +199,10 @@ function renderHero(plan, now, slots) {
   else if (advice.now)
     leave = `<div class="leave now">🏃 Leave now<small>${plural(c.walk, 'min')} walk${advice.late ? ', hurry' : ''}</small></div>`;
   else
-    leave = `<div class="leave">🚶 Leave in ${advice.minutes === 0 ? '< 1' : advice.minutes} min<small>${c.walk} min walk</small></div>`;
+    leave =
+      advice.minutes === 0
+        ? `<div class="leave">🚶 Leave now<small>${c.walk} min walk</small></div>` // still on time: green, not the red hurry bar
+        : `<div class="leave">🚶 Leave in ${advice.minutes} min<small>${c.walk} min walk</small></div>`;
   const eyebrow = reversed ? `From ${esc(c.stopName)} to` : 'Go to stop';
   const placeName = reversed ? c.toName : c.stopName;
   const place = esc(placeName);
@@ -214,9 +217,13 @@ function renderHero(plan, now, slots) {
       <div class="hero-stop">${place}</div>
       <div class="hero-line">${badge(c, 'lg')}<span class="dir" title="${esc(c.direction)}">→ ${esc(shortDirection(c.direction))}</span></div>
       <div class="hero-count">
-        <div class="count" aria-label="${mins} minutes">
-          <span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>
-        </div>
+        <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${mins} minutes ${secs % 60} seconds. Tap to switch between minutes and timer">
+          ${
+            state.countdown
+              ? `<span class="count-num">${mins}:${ss}</span>`
+              : `<span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec">${mins}:${ss}</span>`
+          }
+        </button>
         <div class="times">
           <div>leaves <b>${formatClock(c.depMs)}</b> ${delay}</div>
           ${c.arrMs ? `<div>arrives <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${plural(c.transfers, 'change')}` : ''}</div>` : ''}
@@ -744,6 +751,12 @@ function wire() {
       selectedId = trip.dataset.trip;
       render();
       if (!document.documentElement.classList.contains('watch')) $('hero').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+    if (e.target.closest('#countBtn')) {
+      state.countdown = !state.countdown; // big minutes ⇄ live mm:ss timer
+      saveState();
+      render();
       return;
     }
     if (e.target.closest('#autoBtn')) {
