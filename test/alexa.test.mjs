@@ -22,7 +22,7 @@ test('Alexa answers a launch request in German with live data', async (t) => {
     });
   });
   const res = await handler({ request: { type: 'LaunchRequest', locale: 'de-DE' } });
-  assert.match(res.response.outputSpeech.text, /^Geh zur Haltestelle Edlichstraße\. Tram 7 Richtung Zentrum fährt in [78] Minuten ab/);
+  assert.match(res.response.outputSpeech.text, /^Geh in [3-6] Minuten los, Tram 7 ab Edlichstraße\./);
   assert.equal(res.response.shouldEndSession, true);
 });
 

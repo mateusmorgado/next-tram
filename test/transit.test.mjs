@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   normalizeStopName,
@@ -192,8 +192,8 @@ test('fetchRoute queries both stops in parallel and falls back to HAFAS', async 
   assert.equal(plan.hero.lineName, 'Tram 7'); // Tram 8 in 3 min is too tight for a 4 min walk
   assert.equal(plan.tooTight.lineName, 'Tram 8');
   const text = describePlan(plan, T0);
-  assert.match(text, /^Go to Edlichstraße\. Tram 7 towards Böhlitz-Ehrenberg leaves in 5 minutes, at 17:05\. Leave in 3 minutes\./);
-  assert.match(describePlan(plan, T0, { lang: 'de' }), /Geh zur Haltestelle Edlichstraße/);
+  assert.equal(text, "You won't make Tram 8 at Torgauer Platz. Leave in 3 minutes for Tram 7 at Edlichstraße.");
+  assert.equal(describePlan(plan, T0, { lang: 'de' }), 'Tram 8 ab Torgauer Platz schaffst du nicht mehr. Geh in 3 Minuten los, Tram 7 ab Edlichstraße.');
 });
 
 test('fetchRoute throws when every stop fails', async () => {
@@ -314,4 +314,33 @@ test('trip back picks the tram that gets you home first', () => {
   assert.equal(planTrips(conns, now).hero.id, 'nine');
   assert.equal(planTrips(conns, now, { byArrival: true }).hero.id, 'three');
   assert.equal(planTrips(conns, now, { byArrival: true }).perSlot[0].next.id, 'three');
+});
+
+describe('voice answer rules', () => {
+  const now = Date.parse('2026-11-12T10:00:00Z');
+  const c = (slot, lineName, stopName, dep, walk) => ({ slot, lineName, stopName, depMs: now + dep * 60000, walk });
+  const say = (conns, slots, opts = {}) => describePlan(planTrips(conns, now, { slots }), now, opts);
+
+  test('one stop: no stop name; the backup is a real one, not a tram a minute behind', () => {
+    const conns = [c(0, 'Tram 8', 'Torgauer Platz', 10, 5), c(0, 'Tram 8', 'Torgauer Platz', 11, 5), c(0, 'Tram 8', 'Torgauer Platz', 18, 5)];
+    assert.equal(say(conns, 1), 'Leave in 5 minutes for Tram 8. Or leave in 13 minutes for Tram 8.');
+    assert.equal(say(conns, 1, { lang: 'de' }), 'Geh in 5 Minuten los, Tram 8. Oder in 13 Minuten, Tram 8.');
+  });
+
+  test('two stops: the stop is named', () => {
+    const conns = [c(1, 'Tram 3', 'Torgauer Platz', 6, 4), c(0, 'Tram 7', 'Edlichstraße', 16, 4)];
+    assert.equal(say(conns, 2), 'Leave in 2 minutes for Tram 3 at Torgauer Platz. Or leave in 12 minutes for Tram 7 at Edlichstraße.');
+  });
+
+  test('leave now, and a long gap is announced instead of a far-away backup', () => {
+    const conns = [c(0, 'Tram 8', 'X', 6, 6), c(0, 'Tram 8', 'X', 40, 6)];
+    assert.equal(say(conns, 1), 'Leave now for Tram 8, it goes in 6 minutes. After that, nothing for 34 minutes.');
+    assert.equal(say(conns, 1, { lang: 'de' }), 'Geh jetzt los, Tram 8, fährt in 6 Minuten. Danach kommt 34 Minuten lang nichts.');
+  });
+
+  test('trip back: you are at the station, so "leaves in" and "then"', () => {
+    const conns = [c(0, 'Tram 8', 'Hbf', 4, 0), c(0, 'Tram 3', 'Hbf', 12, 0)];
+    assert.equal(say(conns, 1, { reversed: true }), 'Tram 8 leaves in 4 minutes. Then Tram 3 in 12 minutes.');
+    assert.equal(say(conns, 1, { reversed: true, lang: 'de' }), 'Tram 8 fährt in 4 Minuten. Danach Tram 3 in 12 Minuten.');
+  });
 });
