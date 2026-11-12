@@ -1214,7 +1214,7 @@ function wire() {
 
   // Watch: tap the route to cycle favorites.
   $('routeText').addEventListener('click', () => {
-    const watchy = document.documentElement.classList.contains('watch') || matchMedia('(max-width: 300px)').matches;
+    const watchy = document.documentElement.classList.contains('watch') || matchMedia('(max-width: 300px) and (min-aspect-ratio: 2/3)').matches;
     if (!watchy || state.routes.length < 2) return;
     const i = state.routes.findIndex((r) => r.id === state.activeId);
     switchRoute(state.routes[(i + 1) % state.routes.length].id);
