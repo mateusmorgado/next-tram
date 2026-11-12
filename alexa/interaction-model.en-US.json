@@ -5,32 +5,113 @@
       "intents": [
         {
           "name": "NextTramIntent",
-          "slots": [{ "name": "destination", "type": "DESTINATION" }],
+          "slots": [
+            {
+              "name": "destination",
+              "type": "DESTINATION"
+            }
+          ],
           "samples": [
             "when is the next tram",
+            "when is the next tram leaving",
+            "when is my next tram",
             "next tram",
             "when does the next tram leave",
+            "when does the next tram come",
             "when do I need to leave",
+            "when do I have to leave",
+            "when is the next bus",
             "next tram to {destination}",
-            "when is the next tram to {destination}"
+            "when is the next tram to {destination}",
+            "when does the next tram to {destination} leave"
           ]
         },
         {
           "name": "TripBackIntent",
-          "slots": [{ "name": "destination", "type": "DESTINATION" }],
-          "samples": ["next tram home", "when is the next tram home", "trip back", "how do I get home from {destination}"]
+          "slots": [
+            {
+              "name": "destination",
+              "type": "DESTINATION"
+            }
+          ],
+          "samples": [
+            "next tram home",
+            "when is the next tram home",
+            "when is the next tram back",
+            "trip back",
+            "how do I get home",
+            "how do I get home from {destination}",
+            "when is the next tram back from {destination}"
+          ]
         },
-        { "name": "AMAZON.HelpIntent", "samples": [] },
-        { "name": "AMAZON.StopIntent", "samples": [] },
-        { "name": "AMAZON.CancelIntent", "samples": [] },
-        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+        {
+          "name": "LinkIntent",
+          "samples": [
+            "connect my stops",
+            "link my stops",
+            "connect the app",
+            "link the app",
+            "use my stops",
+            "use my favorites",
+            "connect my favorites"
+          ]
+        },
+        {
+          "name": "UnlinkIntent",
+          "samples": [
+            "forget my stops",
+            "disconnect my stops",
+            "unlink my stops",
+            "disconnect the app"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
       ],
       "types": [
         {
           "name": "DESTINATION",
           "values": [
-            { "id": "lej-hbf", "name": { "value": "Hbf", "synonyms": ["Hauptbahnhof", "main station", "central station"] } },
-            { "id": "ber-strassmann", "name": { "value": "Straßmannstr.", "synonyms": ["Strassmann Street", "Berlin"] } }
+            {
+              "id": "lej-hbf",
+              "name": {
+                "value": "Hbf",
+                "synonyms": [
+                  "Hauptbahnhof",
+                  "main station",
+                  "central station"
+                ]
+              }
+            },
+            {
+              "id": "ber-strassmann",
+              "name": {
+                "value": "Straßmannstr.",
+                "synonyms": [
+                  "Strassmann Street",
+                  "Straßmannstraße",
+                  "Berlin"
+                ]
+              }
+            }
           ]
         }
       ]

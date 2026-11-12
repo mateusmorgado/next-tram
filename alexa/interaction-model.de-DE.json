@@ -5,32 +5,113 @@
       "intents": [
         {
           "name": "NextTramIntent",
-          "slots": [{ "name": "destination", "type": "DESTINATION" }],
+          "slots": [
+            {
+              "name": "destination",
+              "type": "DESTINATION"
+            }
+          ],
           "samples": [
             "wann kommt die nächste bahn",
-            "nächste bahn",
+            "wann fährt die nächste bahn",
+            "wann kommt die nächste straßenbahn",
             "wann fährt die nächste straßenbahn",
+            "wann kommt die nächste tram",
+            "wann fährt die nächste tram",
+            "wann kommt meine bahn",
+            "nächste bahn",
+            "nächste tram",
             "wann muss ich los",
+            "wann muss ich losgehen",
+            "wann kommt der nächste bus",
             "nächste bahn zum {destination}",
-            "wann fährt die nächste bahn zum {destination}"
+            "wann fährt die nächste bahn zum {destination}",
+            "wann kommt die nächste bahn zum {destination}"
           ]
         },
         {
           "name": "TripBackIntent",
-          "slots": [{ "name": "destination", "type": "DESTINATION" }],
-          "samples": ["nächste bahn nach hause", "wann komme ich nach hause", "rückfahrt", "rückfahrt vom {destination}"]
+          "slots": [
+            {
+              "name": "destination",
+              "type": "DESTINATION"
+            }
+          ],
+          "samples": [
+            "nächste bahn nach hause",
+            "wann komme ich nach hause",
+            "wann fährt die nächste bahn zurück",
+            "rückfahrt",
+            "rückfahrt vom {destination}",
+            "wann komme ich vom {destination} nach hause"
+          ]
         },
-        { "name": "AMAZON.HelpIntent", "samples": [] },
-        { "name": "AMAZON.StopIntent", "samples": [] },
-        { "name": "AMAZON.CancelIntent", "samples": [] },
-        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+        {
+          "name": "LinkIntent",
+          "samples": [
+            "verbinde meine haltestellen",
+            "meine haltestellen verbinden",
+            "verbinde die app",
+            "die app verbinden",
+            "nimm meine haltestellen",
+            "nimm meine favoriten",
+            "verbinde meine favoriten"
+          ]
+        },
+        {
+          "name": "UnlinkIntent",
+          "samples": [
+            "vergiss meine haltestellen",
+            "trenne meine haltestellen",
+            "trenne die app",
+            "haltestellen trennen"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
       ],
       "types": [
         {
           "name": "DESTINATION",
           "values": [
-            { "id": "lej-hbf", "name": { "value": "Hbf", "synonyms": ["Hauptbahnhof", "Bahnhof"] } },
-            { "id": "ber-strassmann", "name": { "value": "Straßmannstr.", "synonyms": ["Straßmannstraße", "Berlin"] } }
+            {
+              "id": "lej-hbf",
+              "name": {
+                "value": "Hbf",
+                "synonyms": [
+                  "Hauptbahnhof",
+                  "Bahnhof"
+                ]
+              }
+            },
+            {
+              "id": "ber-strassmann",
+              "name": {
+                "value": "Straßmannstr.",
+                "synonyms": [
+                  "Straßmannstraße",
+                  "Berlin"
+                ]
+              }
+            }
           ]
         }
       ]

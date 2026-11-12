@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NextTram privacy</title>
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <style>
+    :root { color-scheme: light dark; --bg: #f4f2ee; --text: #1b1c1f; --text-2: #5d5f66; --line: #dcd8d0; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #101114; --text: #eceae6; --text-2: #a3a5ab; --line: #2e3037; } }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { font-size: 28px; margin: 0 0 4px; }
+    h2 { font-size: 20px; margin: 32px 0 8px; }
+    p, li { color: var(--text); }
+    .meta { color: var(--text-2); margin: 0 0 24px; }
+    hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>NextTram privacy</h1>
+  <p class="meta">For the NextTram app, its assistant connections and the Next Tram Alexa skill. Last updated 12 November 2026.</p>
+
+  <h2>The short version</h2>
+  <p>NextTram has no accounts. It never asks for your name, email address, location or password, and it sells or shares nothing.</p>
+
+  <h2>What stays on your phone</h2>
+  <p>Your saved stops and settings are kept in your browser’s storage on your device.</p>
+
+  <h2>What is stored online</h2>
+  <ul>
+    <li><b>Your favorites</b>, under a random personal code the app makes for you, so assistants like Alexa or Claude can answer for your first favorite. Only route data is kept: stop names, their coordinates and walking times. Unused codes are deleted after one year.</li>
+    <li><b>Alexa link</b>: if you say “connect my stops”, the skill stores a one-way hash of the anonymous ID Amazon gives the skill, together with your personal code. Amazon’s ID itself is not stored. The 6-digit number Alexa says is deleted after use or after 10 minutes. The link is deleted after one year without use, or right away when you say <i>“Alexa, ask next tram to forget my stops”</i>.</li>
+  </ul>
+
+  <h2>Who else sees what</h2>
+  <ul>
+    <li>To find departures, NextTram sends the stop names or coordinates of your route to public transit services (Transitous and transport.rest). Nothing else is sent.</li>
+    <li>The app and its online part are hosted by Vercel; the favorites are stored with Upstash. Like any web host they see technical data such as IP addresses in their logs.</li>
+    <li>Alexa voice requests are handled by Amazon under Amazon’s own privacy terms. NextTram only receives the request text Amazon passes on.</li>
+  </ul>
+
+  <h2>Deleting your data</h2>
+  <p>Remove the skill, say “forget my stops”, or write to <a href="mailto:nextTram@morgado.tech">nextTram@morgado.tech</a> with your personal code (shown in the app under AI) and we delete it.</p>
+
+  <hr />
+
+  <h1 lang="de">Datenschutz (Deutsch)</h1>
+  <div lang="de">
+    <p>NextTram hat keine Konten und fragt nie nach Name, E-Mail, Standort oder Passwort.</p>
+    <p><b>Auf deinem Gerät:</b> deine Haltestellen und Einstellungen.</p>
+    <p><b>Online:</b> deine Favoriten unter einem zufälligen persönlichen Code (nur Haltestellennamen, Koordinaten, Gehzeiten; nach einem Jahr ohne Nutzung gelöscht). Wenn du Alexa mit „verbinde meine Haltestellen“ verbindest, speichern wir einen Einweg-Hash der anonymen Kennung, die Amazon dem Skill gibt, zusammen mit deinem Code. Die 6-stellige Nummer wird nach Gebrauch oder nach 10 Minuten gelöscht. „Alexa, sag nächste Bahn, vergiss meine Haltestellen“ löscht die Verbindung sofort.</p>
+    <p><b>Weitergabe:</b> Für die Abfahrtszeiten gehen Haltestellennamen oder Koordinaten an öffentliche Fahrplandienste (Transitous, transport.rest). Gehostet bei Vercel, gespeichert bei Upstash. Sprachanfragen verarbeitet Amazon nach eigenen Bedingungen.</p>
+    <p><b>Löschen:</b> Schreib an <a href="mailto:nextTram@morgado.tech">nextTram@morgado.tech</a> mit deinem Code.</p>
+  </div>
+</main>
+</body>
+</html>
