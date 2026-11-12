@@ -453,7 +453,7 @@ function showAssistantPicker() {
   const firstName = first.label || first.dest?.name || 'your first favorite';
   $('aiBody').innerHTML = `
     <h2 id="aiInfoTitle" class="ai-title">Add NextTram to your assistant</h2>
-    <p class="ai-lead">Then just ask <b>“next tram”</b> and it tells you when to leave. Tap your assistant:</p>
+    <p class="ai-lead">Then just ask <b>“when is the next tram”</b> and it tells you when to leave. Tap your assistant:</p>
     <ul class="ai-grid">${ASSISTANTS.map(
       (a) => `<li><button type="button" class="ai-tile" data-assistant="${a.key}">${logo(a.key)}<b>${esc(a.name)}</b><span>${esc(a.where)}</span></button></li>`,
     ).join('')}</ul>
@@ -1064,7 +1064,7 @@ function wire() {
 
   // Watch: tap the route to cycle favorites.
   $('routeText').addEventListener('click', () => {
-    const watchy = document.documentElement.classList.contains('watch') || matchMedia('(max-width: 380px)').matches;
+    const watchy = document.documentElement.classList.contains('watch') || matchMedia('(max-width: 300px)').matches;
     if (!watchy || state.routes.length < 2) return;
     const i = state.routes.findIndex((r) => r.id === state.activeId);
     switchRoute(state.routes[(i + 1) % state.routes.length].id);
