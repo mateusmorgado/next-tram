@@ -15,7 +15,7 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 
 - an installable **PWA** for Android phones and Wear OS watches,
 - an **MCP server** so Claude (or any MCP client) can answer "next tram",
-- an **Alexa skill** ("Alexa, ask Next Tram: when is the next tram"),
+- an **Alexa skill** ("Alexa, ask next tram when is the next tram"),
 - a **Siri Shortcut** ("Hey Siri, Next Tram") on iPhone and Apple Watch.
 
 All three share one module, [`lib/transit.js`](lib/transit.js).
@@ -57,12 +57,12 @@ Tap the active chip (or the sliders icon) to edit a route, **+ New** to add one.
 
 ## Assistants follow your first favorite
 
-The app saves your favorites online under a personal code. Tap **AI** in the app for the step-by-step guide for Claude, ChatGPT, Gemini, Siri and Alexa: each one only needs a personal link, and the assistant then answers for your first favorite. Without a code they use the built-in routes.
+The app saves your favorites online under a personal code. Tap **AI** in the app for the step-by-step guide for Claude, ChatGPT, Gemini, Siri and Alexa: each one only needs a personal link (Alexa: a 6-digit number), and the assistant then answers for your first favorite. Without a code they use the built-in routes.
 
 The links point at two Vercel functions that need nothing installed:
 
 - `api/mcp.js`: online MCP server (Streamable HTTP, stateless JSON). Claude: Settings → Connectors → Add custom connector. ChatGPT: Developer mode → Create. URL `https://app.nexttram.morgado.tech/api/mcp?code=<code>`.
-- `api/alexa.js`: the Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa?code=<code>`, so no AWS Lambda is needed.
+- `api/alexa.js`: the public Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa`. It verifies Amazon's request signature (`lib/alexa-verify.js`). `api/alexa-link.js` links an Alexa user to a personal code ("connect my stops" → 6-digit number → typed into the app).
 
 Storage is Upstash Redis on the Vercel project: Vercel → Storage → **Upstash for Redis** → connect it to `next-tram`. That sets `KV_REST_API_URL`/`KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`), which `api/favorites.js` reads. Whoever knows a code can read and replace that list; only stop names, coordinates and walk times are stored.
 
@@ -86,11 +86,12 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 
 ## Alexa skill
 
-Easiest: follow the Alexa guide in the app (AI button). It points the skill at `api/alexa.js`. To host it yourself instead:
+One public custom skill, hosted on Vercel (`api/alexa.js`), no AWS needed. Console setup, store listing texts and certification: **[docs/alexa-skill.md](docs/alexa-skill.md)**. Privacy policy: `privacy.html`.
 
-1. Zip `alexa-skill.mjs` together with the `lib/` folder and upload it to an AWS Lambda function (Node.js 20). Handler: `alexa-skill.handler`.
-2. In the Alexa developer console create a custom skill, paste `alexa/interaction-model.en-US.json` (and/or `de-DE`) into the JSON editor, and point the endpoint at the Lambda.
-3. "Alexa, ask Next Tram: when is the next tram" / "Alexa, frag Nächste Bahn, wann die nächste Bahn kommt". "…next tram home" uses the trip back.
+- "Alexa, ask next tram when is the next tram" / "Alexa, frag nächste Tram wann kommt die nächste Bahn". "…home" uses the trip back.
+- "Alexa, ask next tram to connect my stops": Alexa says a number; type it in the app (AI → Alexa) and Alexa follows your first favorite. "…forget my stops" undoes it.
+- Optional env `ALEXA_SKILL_ID` (comma-separated) makes the endpoint accept only your skill.
+- Self-hosting on AWS Lambda still works: zip `alexa-skill.mjs` with `lib/`, handler `alexa-skill.handler`, optional `NEXT_TRAM_CODE`.
 
 ## Siri (Apple Shortcuts)
 
@@ -108,5 +109,6 @@ Easiest: follow the Alexa guide in the app (AI button). It points the skill at `
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline shell and install metadata |
 | `mcp-server.mjs`, `lib/mcp-tools.js`, `api/mcp.js` | MCP tools, local stdio server and online server |
 | `lib/assistant-guides.js`, `icons/assistants/` | The in-app "Add to your assistant" guides and logos |
-| `alexa-skill.mjs`, `alexa/`, `api/alexa.js` | Alexa handler, voice models and online endpoint |
+| `alexa-skill.mjs`, `alexa/`, `api/alexa*.js`, `lib/alexa-verify.js`, `docs/alexa-skill.md` | Alexa handler, voice models, signed endpoint, pairing, publishing guide |
+| `privacy.html` | Privacy policy (app, assistants, Alexa skill) |
 | `test/` | `node --test` suites |

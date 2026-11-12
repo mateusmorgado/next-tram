@@ -428,11 +428,9 @@ function assistantCopies() {
   const code = state.syncCode;
   return {
     mcp: copyBox(`${APP_URL}/api/mcp?code=${code}`),
-    alexa: copyBox(`${APP_URL}/api/alexa?code=${code}`),
+    alexaPin: `<span class="ai-copy ai-pin"><input id="alexaPin" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123 456" aria-label="Number Alexa said">
+      <button type="button" class="btn btn-primary ai-copy-btn" data-alexa-link>Connect</button></span><span class="ai-pin-msg" id="alexaPinMsg" role="status"></span>`,
     siri: copyBox(`${APP_URL}/?route=${encodeURIComponent(first.id)}`),
-    alexaModel: `<span class="ai-copy ai-copy-row">
-      <button type="button" class="btn ai-copy-btn" data-copy-file="alexa/interaction-model.en-US.json">Copy English</button>
-      <button type="button" class="btn ai-copy-btn" data-copy-file="alexa/interaction-model.de-DE.json">Copy German</button></span>`,
   };
 }
 
@@ -497,6 +495,29 @@ function toggleTerm(btn) {
   btn.setAttribute('aria-expanded', 'true');
   box.innerHTML = `<b>${esc(t.title)}</b><span>${esc(t.text)}</span>`;
   box.hidden = false;
+}
+
+/** Sends the number Alexa said, so the Alexa skill answers with these favorites from now on. */
+async function linkAlexa() {
+  const msg = $('alexaPinMsg');
+  const pin = ($('alexaPin')?.value || '').replace(/\D/g, '');
+  if (pin.length !== 6) {
+    msg.textContent = 'Type the 6 digits Alexa said.';
+    return;
+  }
+  msg.textContent = 'Connecting…';
+  try {
+    await pushRoutes(state.syncCode, state.routes);
+    const res = await fetch('/api/alexa-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, code: state.syncCode }),
+    });
+    const out = await res.json().catch(() => ({}));
+    msg.textContent = res.ok ? 'Connected ✓ Alexa now uses your stops.' : out.error || 'That didn’t work. Ask Alexa for a new number.';
+  } catch {
+    msg.textContent = 'No connection. Try again in a moment.';
+  }
 }
 
 async function copyFromButton(b) {
@@ -996,9 +1017,10 @@ function wire() {
   $('themeBtn').addEventListener('click', toggleTheme);
   $('aiBtn').addEventListener('click', openAssistants);
   $('aiInfo').addEventListener('click', (e) => {
-    const t = e.target.closest('.term, [data-copy], [data-copy-file], [data-assistant], [data-assistant-back]');
+    const t = e.target.closest('.term, [data-copy], [data-copy-file], [data-assistant], [data-assistant-back], [data-alexa-link]');
     if (!t) return;
     if (t.classList.contains('term')) toggleTerm(t);
+    else if (t.hasAttribute('data-alexa-link')) linkAlexa();
     else if (t.dataset.assistant) showAssistantGuide(t.dataset.assistant);
     else if (t.hasAttribute('data-assistant-back')) showAssistantPicker();
     else copyFromButton(t);
