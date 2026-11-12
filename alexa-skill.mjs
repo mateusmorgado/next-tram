@@ -3,7 +3,7 @@
  *
  * "Alexa, ask next tram when is the next tram."
  * "Alexa, frag next tram wann kommt die nächste Bahn."
- * "Alexa, ask next tram to pair." → a 6-digit number to type into the app,
+ * "Alexa, ask next tram to pair." → a 2-digit number to type into the app,
  * after which Alexa answers for that user's first favorite.
  *
  * The public skill runs on Vercel: https://app.nexttram.morgado.tech/api/alexa (api/alexa.js
@@ -78,21 +78,21 @@ const TEXT = {
     noLink: 'Connecting your stops is not available for this skill.',
     linkFailed: 'Sorry, I could not make a number right now. Please try again in a minute.',
     link: (pin) => ({
-      ssml: `Your number is <say-as interpret-as="digits">${pin}</say-as>. <break time="400ms"/> Open the NextTram app, tap A.I., then Alexa, and type it in. <break time="400ms"/> Once more: <say-as interpret-as="digits">${pin}</say-as>. It works for ten minutes.`,
-      card: `Your NextTram number: ${pin.slice(0, 3)} ${pin.slice(3)}\nOpen the NextTram app → AI → Alexa and type it in. It works for 10 minutes.`,
+      ssml: `Your number is <say-as interpret-as="cardinal">${pin}</say-as>. <break time="400ms"/> Open the NextTram app, tap A.I., then Alexa, and type it in. <break time="400ms"/> Once more: <say-as interpret-as="cardinal">${pin}</say-as>. It works for five minutes.`,
+      card: `Your NextTram number: ${pin}\nOpen the NextTram app → AI → Alexa and type it in. It works for 5 minutes.`,
     }),
     forgotten: 'Done. I forgot your stops and use the built-in ones again.',
   },
   de: {
-    help: 'Frag: wann kommt die nächste Bahn? Oder: wann komme ich nach Hause? Für die Haltestellen aus deiner NextTram App sag: koppeln.',
+    help: 'Frag: wann kommt die nächste Bahn? Oder: wann komme ich nach Hause? Für die Haltestellen aus deiner NextTram App frag nach dem Code.',
     helpReprompt: 'Was möchtest du wissen?',
     fallback: 'Das kann ich leider nicht. Frag zum Beispiel: wann kommt die nächste Bahn?',
     bye: 'Tschüss!',
     noLink: 'Das Verbinden deiner Haltestellen ist bei diesem Skill nicht verfügbar.',
-    linkFailed: 'Entschuldigung, ich konnte gerade keine Nummer erstellen. Versuch es gleich noch einmal.',
+    linkFailed: 'Entschuldigung, ich konnte gerade keinen Code erstellen. Versuch es gleich noch einmal.',
     link: (pin) => ({
-      ssml: `Deine Nummer ist <say-as interpret-as="digits">${pin}</say-as>. <break time="400ms"/> Öffne die NextTram App, tippe auf A.I., dann auf Alexa, und gib sie dort ein. <break time="400ms"/> Noch einmal: <say-as interpret-as="digits">${pin}</say-as>. Sie gilt zehn Minuten.`,
-      card: `Deine NextTram Nummer: ${pin.slice(0, 3)} ${pin.slice(3)}\nÖffne die NextTram App → AI → Alexa und gib sie dort ein. Sie gilt 10 Minuten.`,
+      ssml: `Dein Code ist <say-as interpret-as="cardinal">${pin}</say-as>. <break time="400ms"/> Öffne die NextTram App, tippe auf A.I., dann auf Alexa, und gib ihn dort ein. <break time="400ms"/> Noch einmal: <say-as interpret-as="cardinal">${pin}</say-as>. Er gilt fünf Minuten.`,
+      card: `Dein NextTram Code: ${pin}\nÖffne die NextTram App → AI → Alexa und gib ihn dort ein. Er gilt 5 Minuten.`,
     }),
     forgotten: 'Erledigt. Ich habe deine Haltestellen vergessen und nehme wieder die eingebauten.',
   },

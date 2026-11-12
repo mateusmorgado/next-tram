@@ -15,10 +15,10 @@ What people say:
 | Open | “Alexa, open next tram” | “Alexa, öffne next tram” |
 | Ask | “Alexa, ask next tram when is the next tram” | “Alexa, frag next tram wann kommt die nächste Bahn” |
 | Way back | “Alexa, ask next tram when is the next tram home” | “Alexa, frag next tram wann komme ich nach Hause” |
-| Use own stops | “Alexa, ask next tram to pair” | “Alexa, sag next tram koppeln” |
+| Use own stops | “Alexa, ask next tram to pair” | “Alexa, frag next tram nach dem Code” |
 | Forget them | “Alexa, ask next tram to forget my stops” | “Alexa, sag next tram vergiss meine Haltestellen” |
 
-Without connecting, the skill answers for the built-in first route (Leipzig Hbf). “Connect my stops” makes Alexa say a 6-digit number; typing it in the app (AI → Alexa) links that Alexa user to the app's favorites, and Alexa then answers for the first favorite. Alexa can't be triggered by “Alexa, when is the next tram” without the skill name, except through an Alexa routine (explained in the app's Alexa guide).
+Without connecting, the skill answers for the built-in first route (Leipzig Hbf). “Connect my stops” makes Alexa say a 2-digit number; typing it in the app (AI → Alexa) links that Alexa user to the app's favorites, and Alexa then answers for the first favorite. Alexa can't be triggered by “Alexa, when is the next tram” without the skill name, except through an Alexa routine (explained in the app's Alexa guide).
 
 ## 1. Create the skill
 
@@ -67,9 +67,9 @@ Tab **Distribution**, per language:
 |---|---|---|
 | Public name | NextTram | NextTram |
 | One sentence | Hear when your next tram or bus leaves, and when to walk out the door. | Hör, wann deine nächste Bahn oder dein Bus fährt und wann du losgehen musst. |
-| Detailed | Next Tram tells you when to leave for your tram or bus in Leipzig and Berlin, with live delays. Just ask “when is the next tram”. It answers for your first favorite in the free NextTram app (app.nexttram.morgado.tech): say “pair” and type the number Alexa tells you into the app. Without connecting, it uses Leipzig main station. | Nächste Tram sagt dir, wann du zu deiner Straßenbahn oder deinem Bus in Leipzig und Berlin losgehen musst, mit Live-Verspätungen. Frag einfach „wann kommt die nächste Bahn“. Die Antwort gilt für deinen ersten Favoriten in der kostenlosen NextTram App (app.nexttram.morgado.tech): sag „koppeln“ und gib die Nummer, die Alexa nennt, in der App ein. Ohne Verbindung nimmt sie den Leipziger Hauptbahnhof. |
+| Detailed | Next Tram tells you when to leave for your tram or bus in Leipzig and Berlin, with live delays. Just ask “when is the next tram”. It answers for your first favorite in the free NextTram app (app.nexttram.morgado.tech): say “pair” and type the number Alexa tells you into the app. Without connecting, it uses Leipzig main station. | Nächste Tram sagt dir, wann du zu deiner Straßenbahn oder deinem Bus in Leipzig und Berlin losgehen musst, mit Live-Verspätungen. Frag einfach „wann kommt die nächste Bahn“. Die Antwort gilt für deinen ersten Favoriten in der kostenlosen NextTram App (app.nexttram.morgado.tech): frag „nach dem Code“ und gib die Zahl, die Alexa nennt, in der App ein. Ohne Verbindung nimmt sie den Leipziger Hauptbahnhof. |
 | What's new | First release. | Erste Version. |
-| Example phrases | Alexa, open next tram · Alexa, ask next tram when is the next tram · Alexa, ask next tram to pair | Alexa, öffne next tram · Alexa, frag next tram wann kommt die nächste Bahn · Alexa, sag next tram koppeln |
+| Example phrases | Alexa, open next tram · Alexa, ask next tram when is the next tram · Alexa, ask next tram to pair | Alexa, öffne next tram · Alexa, frag next tram wann kommt die nächste Bahn · Alexa, frag next tram nach dem Code |
 | Small / large icon | `docs/alexa/icon-108.png` / `docs/alexa/icon-512.png` | same |
 | Category | Travel & Transportation → Public Transportation | Reisen & Verkehr → Öffentlicher Verkehr |
 | Keywords | tram, bus, departures, Leipzig, Berlin, public transport, LVB, BVG | Straßenbahn, Bahn, Bus, Abfahrt, Leipzig, Berlin, ÖPNV, LVB, BVG |
@@ -78,7 +78,7 @@ Tab **Distribution**, per language:
 
 **Privacy & Compliance:** Does it allow purchases? No. Collects personal information? No. Directed to children under 13? No. Contains advertising? No. Tick the export compliance box. Testing instructions:
 
-> No account or setup is needed. “open next tram” answers for a built-in route (Leipzig main station) with live departures. “pair” is optional: it says a one-time 6-digit number that the user types into the free NextTram web app (https://app.nexttram.morgado.tech → AI → Alexa) to use their own saved stops; “forget my stops” removes the link.
+> No account or setup is needed. “open next tram” answers for a built-in route (Leipzig main station) with live departures. “pair” is optional: it says a one-time 2-digit number that the user types into the free NextTram web app (https://app.nexttram.morgado.tech → AI → Alexa) to use their own saved stops; “forget my stops” removes the link.
 
 **Availability:** Public. Countries: Germany is enough (the stops are Leipzig and Berlin), or all countries.
 

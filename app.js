@@ -445,7 +445,7 @@ function assistantCopies() {
   const code = state.syncCode;
   return {
     mcp: copyBox(`${APP_URL}/api/mcp?code=${code}`),
-    alexaPin: `<span class="ai-copy ai-pin"><input id="alexaPin" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123 456" aria-label="Number Alexa said">
+    alexaPin: `<span class="ai-copy ai-pin"><input id="alexaPin" inputmode="numeric" autocomplete="one-time-code" maxlength="2" placeholder="42" aria-label="Number Alexa said">
       <button type="button" class="btn btn-primary ai-copy-btn" data-alexa-link>Connect</button></span><span class="ai-pin-msg" id="alexaPinMsg" role="status"></span>`,
     siri: copyBox(`${APP_URL}/?route=${encodeURIComponent(first.id)}`),
   };
@@ -518,8 +518,8 @@ function toggleTerm(btn) {
 async function linkAlexa() {
   const msg = $('alexaPinMsg');
   const pin = ($('alexaPin')?.value || '').replace(/\D/g, '');
-  if (pin.length !== 6) {
-    msg.textContent = 'Type the 6 digits Alexa said.';
+  if (pin.length !== 2) {
+    msg.textContent = 'Type the 2-digit number Alexa said.';
     return;
   }
   msg.textContent = 'Connecting…';
