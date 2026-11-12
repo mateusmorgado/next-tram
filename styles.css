@@ -213,21 +213,65 @@ html.watch .install-card { display: none; }
 .delay-info li { display: grid; grid-template-columns: 76px 1fr; gap: 10px; align-items: start; font-size: 14px; color: var(--text-2); }
 .delay-info .delay { justify-self: start; }
 .delay.plan { background: var(--surface-2); color: var(--text-3); }
-/* Assistants */
+/* Assistants: "Add NextTram to your assistant" guide */
 .ai-btn { font-size: 13px; font-weight: 800; letter-spacing: 0.02em; }
-.ai-pop { width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-x: hidden; }
-.ai-pop form { min-width: 0; grid-template-columns: minmax(0, 1fr); }
-.ai-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.ai-list li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; font-size: 14px; color: var(--text-2); }
-.ai-list li > span { min-width: 0; }
-.ai-list li.soon { opacity: 0.55; }
-.ai-name { color: var(--text); font-size: 15px; }
-.ai-code { display: grid; gap: 4px; padding: 12px; border-radius: 12px; background: var(--surface-2); }
-.ai-code code { letter-spacing: 0.08em; font-size: 14px; background: var(--surface); }
-.ai-code .hint { margin: 0; font-size: 12px; }
-.ai-list code { font-size: 12px; }
-.ai-link { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.ai-link code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; padding: 6px 8px; border-radius: 8px; background: var(--surface-2); color: var(--text); }
+.ai-pop { width: min(480px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-x: hidden; padding: 22px 20px; }
+.ai-pop form { min-width: 0; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+#aiBody { display: grid; gap: 16px; min-width: 0; }
+.ai-pop .ai-title { font-size: 22px; line-height: 1.25; margin: 0; }
+.ai-lead { margin: 0; font-size: 17px; line-height: 1.5; color: var(--text-2); }
+.ai-lead b { color: var(--text); }
+.ai-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.ai-tile {
+  width: 100%; display: grid; justify-items: center; gap: 6px; padding: 16px 8px 14px;
+  border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--text);
+  font: inherit; cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+}
+.ai-tile:hover { border-color: var(--text-3); }
+.ai-tile:active { transform: scale(0.97); }
+.ai-tile b { font-size: 17px; }
+.ai-tile span { font-size: 13px; color: var(--text-3); text-align: center; line-height: 1.3; }
+.ai-logo { width: 52px; height: 52px; border-radius: 13px; display: block; flex: none; }
+.ai-note { padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 16px; line-height: 1.5; color: var(--text-2); }
+.ai-note b { color: var(--text); }
+.ai-note code { letter-spacing: 0.06em; font-size: 15px; padding: 2px 6px; border-radius: 6px; background: var(--surface); color: var(--text); white-space: nowrap; }
+.ai-back { justify-self: start; padding: 4px 0; font-size: 15px; }
+.ai-back svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ai-guide-head { display: flex; align-items: center; gap: 14px; }
+.ai-time { font-size: 14px; color: var(--text-3); }
+.ai-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 18px; }
+.ai-steps li { counter-increment: step; position: relative; padding-left: 44px; min-width: 0; font-size: 17px; line-height: 1.55; color: var(--text); }
+.ai-steps li::before {
+  content: counter(step); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--text); color: var(--bg); font-size: 15px; font-weight: 750;
+}
+.step-text { min-width: 0; overflow-wrap: anywhere; }
+.go-link { display: block; width: fit-content; margin-top: 6px; font-weight: 650; color: var(--focus); text-underline-offset: 3px; }
+.go-link::after { content: ' ↗'; white-space: pre; }
+.term {
+  display: inline; font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; white-space: nowrap;
+  text-decoration: underline dotted var(--text-3); text-underline-offset: 4px;
+}
+.term-i {
+  display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 4px; vertical-align: 2px;
+  border-radius: 50%; background: var(--focus); color: #fff; font: italic 700 12px/1 Georgia, serif;
+}
+.term[aria-expanded='true'] .term-i { background: var(--text); color: var(--bg); }
+.explain {
+  margin-top: 10px; padding: 12px 14px; border-radius: 12px; border-left: 4px solid var(--focus);
+  background: color-mix(in srgb, var(--focus) 10%, var(--surface)); font-size: 16px; line-height: 1.5; color: var(--text);
+  display: grid; gap: 4px;
+}
+.explain[hidden] { display: none; }
+.ai-copy { display: flex; align-items: center; gap: 8px; margin-top: 8px; min-width: 0; }
+.ai-copy code {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px;
+  padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--text);
+}
+.ai-copy-btn { flex: none; height: 42px; background: var(--surface); color: var(--text); font-size: 15px; }
+.ai-try { display: grid; gap: 2px; padding: 14px 16px; border-radius: 14px; background: var(--go-soft); color: var(--go); font-size: 15px; }
+.ai-try b { font-size: 19px; color: var(--text); }
+.ai-pop .btn-primary { justify-self: stretch; height: 48px; font-size: 16px; }
 
 .leave {
   display: flex; align-items: center; gap: 10px; padding: 14px 20px;
@@ -518,3 +562,4 @@ html.watch .hero-main .monogram { position: fixed; font-size: 76vmin; top: 0; ri
   html:not(.no-watch) .hero, html:not(.no-watch) .hero-main { overflow: visible; }
   html:not(.no-watch) .monogram { position: fixed; font-size: 76vmin; top: 0; right: -4vmin; transform: translate(0, 0); z-index: 0; }
 }
+.ai-copy-row .ai-copy-btn { flex: 1 1 0; padding: 0 10px; white-space: nowrap; }

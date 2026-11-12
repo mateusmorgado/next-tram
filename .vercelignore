@@ -1,7 +1,6 @@
-# Only the PWA is deployed. The MCP server, Alexa skill, tests and docs stay in the repo.
+# The PWA and the api/ functions are deployed. api/alexa.js imports alexa-skill.mjs, and the
+# AI screen offers the Alexa voice model for copying, so both stay in. The rest stays in the repo.
 .github
-alexa
-alexa-skill.mjs
 mcp-server.mjs
 scripts
 test

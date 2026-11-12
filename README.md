@@ -57,11 +57,18 @@ Tap the active chip (or the sliders icon) to edit a route, **+ New** to add one.
 
 ## Assistants follow your first favorite
 
-The app saves your favorites online under a personal code (tap **AI** in the app to see it). Give that code to the MCP server or the Alexa skill as `NEXT_TRAM_CODE`, and they answer for your first favorite. Without a code they use the built-in routes.
+The app saves your favorites online under a personal code. Tap **AI** in the app for the step-by-step guide for Claude, ChatGPT, Gemini, Siri and Alexa: each one only needs a personal link, and the assistant then answers for your first favorite. Without a code they use the built-in routes.
+
+The links point at two Vercel functions that need nothing installed:
+
+- `api/mcp.js`: online MCP server (Streamable HTTP, stateless JSON). Claude: Settings → Connectors → Add custom connector. ChatGPT: Developer mode → Create. URL `https://app.nexttram.morgado.tech/api/mcp?code=<code>`.
+- `api/alexa.js`: the Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa?code=<code>`, so no AWS Lambda is needed.
 
 Storage is Upstash Redis on the Vercel project: Vercel → Storage → **Upstash for Redis** → connect it to `next-tram`. That sets `KV_REST_API_URL`/`KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`), which `api/favorites.js` reads. Whoever knows a code can read and replace that list; only stop names, coordinates and walk times are stored.
 
-## MCP server (Claude)
+## MCP server on your own computer (optional)
+
+The tools live in `lib/mcp-tools.js`; `mcp-server.mjs` serves them over stdio:
 
 ```json
 {
@@ -79,6 +86,8 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 
 ## Alexa skill
 
+Easiest: follow the Alexa guide in the app (AI button). It points the skill at `api/alexa.js`. To host it yourself instead:
+
 1. Zip `alexa-skill.mjs` together with the `lib/` folder and upload it to an AWS Lambda function (Node.js 20). Handler: `alexa-skill.handler`.
 2. In the Alexa developer console create a custom skill, paste `alexa/interaction-model.en-US.json` (and/or `de-DE`) into the JSON editor, and point the endpoint at the Lambda.
 3. "Alexa, ask Next Tram when the next tram is" / "Alexa, frag Nächste Bahn, wann die nächste Bahn kommt". "…next tram home" uses the trip back.
@@ -86,7 +95,7 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 ## Siri (Apple Shortcuts)
 
 1. Open **Shortcuts** on your iPhone → **+** → **Add Action** → **Open URLs**.
-2. URL: `https://next-tram-gray.vercel.app/?route=lej-hbf` (any favorite's id works; add `&back=1` for the trip back).
+2. URL: `https://app.nexttram.morgado.tech/?route=lej-hbf` (any favorite's id works; add `&back=1` for the trip back).
 3. Name the shortcut **Next Tram**. Now "Hey Siri, Next Tram" opens your route with the countdown, on the iPhone or from the Apple Watch.
 
 ## Files
@@ -97,6 +106,7 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 | `lib/transit.js` | API clients, stop matching, walk-buffer planning, spoken summary |
 | `lib/stops.js` | Cities, stops, default routes |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline shell and install metadata |
-| `mcp-server.mjs` | MCP stdio server |
-| `alexa-skill.mjs`, `alexa/` | Alexa Lambda handler and voice models |
+| `mcp-server.mjs`, `lib/mcp-tools.js`, `api/mcp.js` | MCP tools, local stdio server and online server |
+| `lib/assistant-guides.js`, `icons/assistants/` | The in-app "Add to your assistant" guides and logos |
+| `alexa-skill.mjs`, `alexa/`, `api/alexa.js` | Alexa handler, voice models and online endpoint |
 | `test/` | `node --test` suites |

@@ -1,5 +1,6 @@
 import { CITIES, DEFAULT_ROUTES, DEFAULT_MODE_FILTER, DEFAULTS_VERSION, RETIRED_DEFAULTS } from './lib/stops.js';
-import { newCode, isValidCode, formatCode, pushRoutes } from './lib/favorites-sync.js';
+import { newCode, isValidCode, formatCode, pushRoutes, APP_URL } from './lib/favorites-sync.js';
+import { ASSISTANTS, TERMS } from './lib/assistant-guides.js';
 import {
   createTransitClient,
   fetchRoute,
@@ -417,30 +418,97 @@ function openDelayInfo() {
 
 // ───────────────────────── Assistants ─────────────────────────
 
-const APP_URL = 'https://next-tram-gray.vercel.app';
-const ASSISTANTS = [
-  { key: 'siri', name: 'Siri', how: (r) => `In <b>Shortcuts</b>: + → <b>Open URLs</b> → paste the link below → name it <b>Next Tram</b>. Then say "Hey Siri, Next Tram", also on the Apple Watch.`, link: true },
-  { key: 'claude', name: 'Claude', how: () => `Add the NextTram MCP server in Claude Desktop (Settings → Developer → Edit config) with <code>NEXT_TRAM_CODE</code> set to your code. Then ask "when is my next tram?".` },
-  { key: 'chatgpt', name: 'ChatGPT', how: () => `Uses the same MCP server and code, added as a connector where your ChatGPT plan allows it.` },
-  { key: 'gemini', name: 'Gemini', how: () => `Uses the same MCP server and code, from Gemini CLI or any MCP client.` },
-  { key: 'alexa', name: 'Alexa', how: () => `Set <code>NEXT_TRAM_CODE</code> on the skill to your code, then say "Alexa, ask Next Tram when the next tram is".` },
-  { key: 'google', name: 'Google Assistant', how: () => `Coming soon.`, soon: true },
-];
+const logo = (key) => `<img class="ai-logo" src="icons/assistants/${key}.svg" alt="" width="48" height="48">`;
+const copyBox = (value, label = 'Copy', shown = value) =>
+  `<span class="ai-copy"><code>${esc(shown)}</code><button type="button" class="btn ai-copy-btn" data-copy="${esc(value)}">${esc(label)}</button></span>`;
+
+/** The links and texts the guides offer for copying. */
+function assistantCopies() {
+  const first = state.routes[0];
+  const code = state.syncCode;
+  return {
+    mcp: copyBox(`${APP_URL}/api/mcp?code=${code}`),
+    alexa: copyBox(`${APP_URL}/api/alexa?code=${code}`),
+    siri: copyBox(`${APP_URL}/?route=${encodeURIComponent(first.id)}`),
+    alexaModel: `<span class="ai-copy ai-copy-row">
+      <button type="button" class="btn ai-copy-btn" data-copy-file="alexa/interaction-model.en-US.json">Copy English</button>
+      <button type="button" class="btn ai-copy-btn" data-copy-file="alexa/interaction-model.de-DE.json">Copy German</button></span>`,
+  };
+}
+
+/** Fills [[term:key|words]] and [[copy:key]] in guide text. */
+function fillGuide(html, copies) {
+  return html
+    .replace(/\[\[term:(\w+)\|([^\]]+)\]\]/g, (_, k, words) =>
+      `<button type="button" class="term" data-term="${k}" aria-expanded="false">${words}<span class="term-i" aria-hidden="true">i</span></button>`)
+    .replace(/\[\[copy:(\w+)\]\]/g, (_, k) => copies[k] || '');
+}
 
 function openAssistants() {
-  const first = state.routes[0];
-  const url = `${APP_URL}/?route=${encodeURIComponent(first.id)}`;
-  $('aiFirst').textContent = first.label || first.dest?.name || 'your first favorite';
-  $('aiCode').textContent = formatCode(state.syncCode);
-  $('aiCodeCopy').dataset.copy = state.syncCode;
-  $('aiCodeCopy').textContent = 'Copy';
   scheduleSync();
-  $('aiList').innerHTML = ASSISTANTS.map(
-    (a) => `<li class="${a.soon ? 'soon' : ''}"><b class="ai-name">${esc(a.name)}</b><span>${a.how(first)}${
-      a.link ? `<span class="ai-link"><code>${esc(url)}</code><button type="button" class="text-btn" data-copy="${esc(url)}">Copy</button></span>` : ''
-    }</span></li>`,
-  ).join('');
+  showAssistantPicker();
   $('aiInfo').showModal();
+}
+
+function showAssistantPicker() {
+  const first = state.routes[0];
+  const firstName = first.label || first.dest?.name || 'your first favorite';
+  $('aiBody').innerHTML = `
+    <h2 id="aiInfoTitle" class="ai-title">Add NextTram to your assistant</h2>
+    <p class="ai-lead">Then just ask <b>“next tram”</b> and it tells you when to leave. Tap your assistant:</p>
+    <ul class="ai-grid">${ASSISTANTS.map(
+      (a) => `<li><button type="button" class="ai-tile" data-assistant="${a.key}">${logo(a.key)}<b>${esc(a.name)}</b><span>${esc(a.where)}</span></button></li>`,
+    ).join('')}</ul>
+    <div class="ai-note">${fillGuide(
+      `Your assistant answers for your [[term:first|first favorite]]: <b>${esc(firstName)}</b>.`,
+      {},
+    )}<div class="explain" hidden></div></div>
+    <div class="ai-note ai-code-note">${fillGuide(`Your [[term:code|personal code]]: <code>${esc(formatCode(state.syncCode))}</code>`, {})}<div class="explain" hidden></div></div>`;
+}
+
+function showAssistantGuide(key) {
+  const a = ASSISTANTS.find((x) => x.key === key);
+  if (!a) return showAssistantPicker();
+  const copies = assistantCopies();
+  $('aiBody').innerHTML = `
+    <button type="button" class="text-btn ai-back" data-assistant-back>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>All assistants
+    </button>
+    <div class="ai-guide-head">${logo(a.key)}<div><h2 id="aiInfoTitle" class="ai-title">Add to ${esc(a.name)}</h2><span class="ai-time">${esc(a.time)}</span></div></div>
+    <div class="ai-note">${fillGuide(`<b>You need:</b> ${a.needs}`, copies)}<div class="explain" hidden></div></div>
+    <ol class="ai-steps">${a.steps
+      .map((st) => `<li><div class="step-text">${fillGuide(st, copies)}</div><div class="explain" hidden></div></li>`)
+      .join('')}</ol>
+    <div class="ai-try"><span>Now try it</span><b>“${esc(a.tryIt)}”</b></div>`;
+  $('aiBody').closest('dialog').scrollTop = 0;
+}
+
+/** Shows or hides a word's explanation right under the step it is in. */
+function toggleTerm(btn) {
+  const box = btn.closest('li, .ai-note')?.querySelector(':scope > .explain');
+  if (!box) return;
+  const t = TERMS[btn.dataset.term];
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  box.closest('li, .ai-note').querySelectorAll('.term').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  if (open || !t) {
+    box.hidden = true;
+    return;
+  }
+  btn.setAttribute('aria-expanded', 'true');
+  box.innerHTML = `<b>${esc(t.title)}</b><span>${esc(t.text)}</span>`;
+  box.hidden = false;
+}
+
+async function copyFromButton(b) {
+  const label = b.dataset.label || (b.dataset.label = b.textContent);
+  try {
+    const text = b.dataset.copyFile ? await (await fetch(b.dataset.copyFile, { cache: 'no-cache' })).text() : b.dataset.copy;
+    await navigator.clipboard.writeText(text);
+    b.textContent = 'Copied ✓';
+  } catch {
+    b.textContent = 'Copy failed';
+  }
+  setTimeout(() => (b.textContent = label), 2500);
 }
 
 function renderStatus(now) {
@@ -927,15 +995,13 @@ function wire() {
   $('setupBtn').addEventListener('click', () => openSetup(state.activeId));
   $('themeBtn').addEventListener('click', toggleTheme);
   $('aiBtn').addEventListener('click', openAssistants);
-  $('aiInfo').addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-copy]');
-    if (!b) return;
-    try {
-      await navigator.clipboard.writeText(b.dataset.copy);
-      b.textContent = 'Copied';
-    } catch {
-      b.textContent = 'Copy failed';
-    }
+  $('aiInfo').addEventListener('click', (e) => {
+    const t = e.target.closest('.term, [data-copy], [data-copy-file], [data-assistant], [data-assistant-back]');
+    if (!t) return;
+    if (t.classList.contains('term')) toggleTerm(t);
+    else if (t.dataset.assistant) showAssistantGuide(t.dataset.assistant);
+    else if (t.hasAttribute('data-assistant-back')) showAssistantPicker();
+    else copyFromButton(t);
   });
   $('watchBtn').addEventListener('click', () => {
     state.watch = !state.watch;
