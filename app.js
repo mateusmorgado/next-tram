@@ -145,7 +145,7 @@ function render() {
   const now = Date.now();
   const route = activeRoute();
   const slots = routeOptions(route, reversed).length;
-  const plan = planTrips(connections, now, { selectedId, slots });
+  const plan = planTrips(connections, now, { selectedId, slots, byArrival: reversed });
   if (selectedId && !plan.upcoming.some((c) => c.id === selectedId)) selectedId = null;
   lastPlan = plan;
 
@@ -292,7 +292,7 @@ function renderHero(plan, now, slots) {
       advice.minutes === 0
         ? `<div class="leave">🚶 Leave now<small>${c.walk} min walk</small></div>` // still on time: green, not the red hurry bar
         : `<div class="leave">🚶 Leave in ${advice.minutes} min<small>${c.walk} min walk</small></div>`;
-  const eyebrow = reversed ? `From ${esc(c.stopName)} to` : 'Go to stop';
+  const eyebrow = reversed ? `From ${esc(c.boardAt || c.stopName)} to` : 'Go to stop';
   const placeName = reversed ? c.toName : c.stopName;
   const place = esc(placeName);
   const mark = heroMark(c, placeName, slots);
@@ -315,7 +315,7 @@ function renderHero(plan, now, slots) {
         </button>
         <div class="times">
           <div>leaves <b>${formatClock(c.depMs)}</b> ${delay}</div>
-          ${c.arrMs ? `<div>arrives <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${plural(c.transfers, 'change')}` : ''}</div>` : ''}
+          ${c.arrMs ? `<div>arrives <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${changeText(c)}` : ''}</div>` : ''}
         </div>
       </div>
     </div>
@@ -365,27 +365,44 @@ function renderUpcoming(plan, now) {
   const wasHidden = section.hidden;
   section.hidden = false;
   const multi = routeOptions(activeRoute(), reversed).length > 1;
-  const html = plan.upcoming
-    .map((c) => {
+  const html = upcomingRows(plan.upcoming)
+    .map((group) => {
+      const c = group[0];
       const tight = c.depMs - now < c.walk * 60000;
-      const selected = plan.hero && plan.hero.id === c.id;
-      const sub = [
-        multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '',
-        c.arrMs ? `arr ${formatClock(c.arrMs)}` : '',
-      ]
-        .filter(Boolean)
-        .join(' · ');
+      const selected = plan.hero && group.some((g) => g.id === plan.hero.id);
+      // On the trip back one tram can bring you to both home stops: one row, both arrivals.
+      const sub =
+        group.length > 1
+          ? group
+              .filter((g) => g.arrMs)
+              .sort((x, y) => x.arrMs - y.arrMs)
+              .map((g) => `${g.toName} ${formatClock(g.arrMs)}`)
+              .join(' · ')
+          : [multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '', c.arrMs ? `arr ${formatClock(c.arrMs)}` : '']
+              .filter(Boolean)
+              .join(' · ');
       const d = c.realtime ? delayLabel(c.delayMin) : null;
       const chip = d && d.key !== 'ontime' ? delayChip(c.delayMin, 'sm') : '';
       return `<li><button class="trip ${tight ? 'tight' : ''} ${selected ? 'selected' : ''}" type="button" data-trip="${esc(c.id)}">
         <span class="t">${formatClock(c.depMs)}</span>
         ${badge(c)}
-        <span class="info"><span class="dir" title="${esc(c.direction)}">${esc(shortDirection(c.direction))}</span><span class="sub">${chip}${esc(sub)}</span></span>
+        <span class="info"><span class="dir" title="${esc(c.direction)}">${esc(shortDirection(c.direction))}</span><span class="sub${group.length > 1 ? ' both' : ''}">${chip}${esc(sub)}</span></span>
         <span class="in">${tight ? 'too tight' : `${minutesUntil(c, now)} min`}</span>
       </button></li>`;
     })
     .join('');
   if (setHtml($('tripList'), html) || wasHidden) capUpcoming();
+}
+
+/** Group the same departure (same vehicle, same stop) into one row. */
+function upcomingRows(list) {
+  const rows = new Map();
+  for (const c of list) {
+    const key = `${c.tripKey}|${c.schedMs}|${c.stopName}`;
+    if (rows.has(key)) rows.get(key).push(c);
+    else rows.set(key, [c]);
+  }
+  return [...rows.values()];
 }
 
 /** Cap the list at 7 visible rows; the rest scrolls inside it. */
@@ -650,6 +667,14 @@ function resetData() {
 function scheduleRefresh() {
   clearInterval(refreshTimer);
   refreshTimer = setInterval(() => autoRefresh(), 5000);
+}
+
+/** "change at Ostplatz to 3", so a changing trip doesn't look like a direct one. */
+function changeText(c) {
+  const first = c.changes?.[0];
+  if (!first?.at) return plural(c.transfers, 'change');
+  const more = c.transfers > 1 ? ` (+${c.transfers - 1} more)` : '';
+  return `change at ${esc(first.at)}${first.line ? ` to ${esc(first.line)}` : ''}${more}`;
 }
 
 // ───────────────────────── Theme & watch ─────────────────────────

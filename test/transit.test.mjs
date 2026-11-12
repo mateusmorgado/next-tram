@@ -285,3 +285,33 @@ test('a tram boarding at another stop is dropped even when both IDs are DELFI ID
   const list = parseMotisPlan(data, { from: { name: 'Edlichstraße', tid: 'de-DELFI_de:14713:11508' }, filter: 'tram_bus' });
   assert.deepEqual(list.map((c) => c.tripKey), ['trip-7a']);
 });
+
+test('trip back accepts every tram stop around a big station, and names the change', () => {
+  const t = (m) => new Date(Date.UTC(2026, 10, 12, 10, m)).toISOString();
+  const hbf = { name: 'Hauptbahnhof', lat: 51.3455, lon: 12.3817 };
+  const data = {
+    itineraries: [
+      { endTime: t(30), legs: [{ mode: 'TRAM', from: { name: 'Hbf. Westseite', lat: 51.3448, lon: 12.3792 }, startTime: t(5), routeShortName: '9', headsign: 'Connewitz', tripId: 'a' },
+        { mode: 'TRAM', from: { name: 'Ostplatz', lat: 51.33, lon: 12.39 }, startTime: t(15), routeShortName: '3', tripId: 'b' }] },
+      { endTime: t(25), legs: [{ mode: 'TRAM', from: { name: 'Willy-Brandt-Platz', lat: 51.3442, lon: 12.3808 }, startTime: t(8), routeShortName: '3', headsign: 'Taucha', tripId: 'c' }] },
+      { endTime: t(25), legs: [{ mode: 'TRAM', from: { name: 'Gohlis', lat: 51.37, lon: 12.37 }, startTime: t(8), routeShortName: '4', tripId: 'd' }] },
+    ],
+  };
+  assert.deepEqual(parseMotisPlan(data, { from: hbf }).map((c) => c.line), []); // strict: other platforms dropped
+  const near = parseMotisPlan(data, { from: hbf, nearKm: 0.4 });
+  assert.deepEqual(near.map((c) => c.line), ['9', '3']);
+  assert.deepEqual(near[0].changes, [{ line: '3', at: 'Ostplatz' }]);
+  assert.equal(near[1].transfers, 0);
+});
+
+test('trip back picks the tram that gets you home first', () => {
+  const now = Date.UTC(2026, 10, 12, 10, 0);
+  const m = (x) => now + x * 60000;
+  const conns = [
+    { id: 'nine', slot: 0, walk: 0, depMs: m(4), arrMs: m(27) },
+    { id: 'three', slot: 0, walk: 0, depMs: m(6), arrMs: m(18) },
+  ];
+  assert.equal(planTrips(conns, now).hero.id, 'nine');
+  assert.equal(planTrips(conns, now, { byArrival: true }).hero.id, 'three');
+  assert.equal(planTrips(conns, now, { byArrival: true }).perSlot[0].next.id, 'three');
+});
