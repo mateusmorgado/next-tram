@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "nächste tram",
+      "invocationName": "next tram",
       "intents": [
         {
           "name": "NextTramIntent",

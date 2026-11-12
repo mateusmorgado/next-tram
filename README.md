@@ -90,7 +90,7 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 
 One public custom skill, hosted on Vercel (`api/alexa.js`), no AWS needed. Console setup, store listing texts and certification: **[docs/alexa-skill.md](docs/alexa-skill.md)**. Privacy policy: `privacy.html`.
 
-- "Alexa, ask next tram when is the next tram" / "Alexa, frag nächste Tram wann kommt die nächste Bahn". "…home" uses the trip back.
+- "Alexa, ask next tram when is the next tram" / "Alexa, frag next tram wann kommt die nächste Bahn". "…home" uses the trip back.
 - "Alexa, ask next tram to pair": Alexa says a number; type it in the app (AI → Alexa) and Alexa follows your first favorite. "…forget my stops" undoes it.
 - Optional env `ALEXA_SKILL_ID` (comma-separated) makes the endpoint accept only your skill.
 - Self-hosting on AWS Lambda still works: zip `alexa-skill.mjs` with `lib/`, handler `alexa-skill.handler`, optional `NEXT_TRAM_CODE`.
