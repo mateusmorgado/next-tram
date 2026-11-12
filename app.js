@@ -11,6 +11,9 @@ import {
   shortStopName,
   shortDirection,
   routeOptions,
+  formatWalk,
+  bufferSecs,
+  BUFFER_CHOICES,
   delayLabel,
   DELAY_BRACKETS,
 } from './lib/transit.js';
@@ -63,7 +66,9 @@ function loadState() {
   }
   const activeId = routes.some((r) => r.id === saved.activeId) ? saved.activeId : routes[0].id;
   const mark = MARKS.includes(saved.mark) ? saved.mark : 'stop';
-  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '', installHidden: Boolean(saved.installHidden) };
+  // Spare time is one setting for all routes; each route carries a copy so the assistants see it too.
+  const buffer = BUFFER_CHOICES.includes(saved.buffer) ? saved.buffer : bufferSecs(routes[0]?.buffer);
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, buffer, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '', installHidden: Boolean(saved.installHidden) };
 }
 
 function saveState() {
@@ -108,6 +113,8 @@ function setHtml(el, html) {
   return true;
 }
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** "3:42 min walk", plus the spare time when there is some: "3:42 min walk + 30 s". */
+const walkText = (c) => `${formatWalk(c.walkBase ?? c.walk)} walk${c.buffer ? ` + ${c.buffer} s` : ''}`;
 
 // ───────────────────────── Rendering ─────────────────────────
 
@@ -286,12 +293,12 @@ function renderHero(plan, now, slots) {
   // No walk set for the trip back: you're already at the stop, so no leave advice at all.
   if (advice.atStop) leave = reversed ? '' : `<div class="leave idle">You're at the stop</div>`;
   else if (advice.now)
-    leave = `<div class="leave now">🏃 Leave now<small>${plural(c.walk, 'min')} walk${advice.late ? ', hurry' : ''}</small></div>`;
+    leave = `<div class="leave now">🏃 Leave now<small>${walkText(c)}${advice.late ? ', hurry' : ''}</small></div>`;
   else
     leave =
       advice.minutes === 0
-        ? `<div class="leave">🚶 Leave now<small>${c.walk} min walk</small></div>` // still on time: green, not the red hurry bar
-        : `<div class="leave">🚶 Leave in ${advice.minutes} min<small>${c.walk} min walk</small></div>`;
+        ? `<div class="leave">🚶 Leave now<small>${walkText(c)}</small></div>` // still on time: green, not the red hurry bar
+        : `<div class="leave">🚶 Leave in ${advice.minutes} min<small>${walkText(c)}</small></div>`;
   const eyebrow = reversed ? `From ${esc(c.boardAt || c.stopName)} to` : 'Go to stop';
   const placeName = reversed ? c.toName : c.stopName;
   const place = esc(placeName);
@@ -343,7 +350,7 @@ function renderCompare(plan, now, slots) {
       const isBest = plan.hero && plan.hero.slot === p.slot && !plan.manual;
       const n = p.next;
       return `<button class="stop-card ${isBest ? 'best' : ''}" type="button" ${n ? `data-trip="${esc(n.id)}"` : 'disabled'}>
-        <div class="meta"><span>${reversed ? 'Get off at' : `Stop ${p.slot + 1} · ${o.walk} min walk`}</span>${isBest ? '<span class="best-tag">Best</span>' : ''}</div>
+        <div class="meta"><span>${reversed ? 'Get off at' : `Stop ${p.slot + 1} · ${formatWalk(o.walkBase)} walk`}</span>${isBest ? '<span class="best-tag">Best</span>' : ''}</div>
         <div class="name">${esc(name)}</div>
         ${
           n
@@ -807,6 +814,7 @@ function syncSetupForm() {
   $('addBackWalkBtn').hidden = backWalk;
   $('stop0Label').textContent = secondStop ? 'Stop 1' : 'Your stop';
   document.querySelectorAll('#markSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mark === state.mark)));
+  document.querySelectorAll('#bufferSeg button').forEach((b) => b.setAttribute('aria-checked', String(Number(b.dataset.buffer) === state.buffer)));
   $('stopDest').value = draft.dest ? shortStopName(draft.dest.name) : '';
   $('routeLabel').value = draft.label || '';
   syncSteppers();
@@ -816,7 +824,7 @@ function syncSteppers() {
   document.querySelectorAll('.stepper').forEach((st) => {
     const key = st.dataset.walk;
     const v = key === 'dest' ? draft.destWalk ?? 0 : draft.stops[Number(key)]?.walk ?? 0;
-    st.querySelector('output').textContent = `${v} min`;
+    st.querySelector('output').textContent = formatWalk(v);
   });
 }
 
@@ -825,6 +833,121 @@ function stepWalk(key, delta) {
   if (key === 'dest') draft.destWalk = clamp(draft.destWalk);
   else if (draft.stops[Number(key)]) draft.stops[Number(key)].walk = clamp(draft.stops[Number(key)].walk);
   syncSteppers();
+}
+
+/** Spare time on top of every walk, for all routes. Applies right away, like the card mark. */
+function setBuffer(secs) {
+  state.buffer = bufferSecs(secs);
+  for (const r of state.routes) {
+    if (state.buffer) r.buffer = state.buffer;
+    else delete r.buffer;
+  }
+  if (draft) draft.buffer = state.buffer || undefined;
+  // Departures already loaded keep their walk; only the spare time on top changes.
+  connections = connections.map((c) => (c.walkBase ? { ...c, buffer: state.buffer, walk: c.walkBase + state.buffer / 60 } : c));
+  saveState();
+  syncSetupForm();
+  render();
+}
+
+// ───────────────────────── Walk stopwatch ─────────────────────────
+// Start at the front door, stop at the tram stop. The start time is saved, so the
+// count survives a locked phone, and even the app being closed on the way.
+
+const TIMER_KEY = 'nexttram:walktimer';
+let walkTimer = null; // { key, start, stopped }
+let walkTick = 0;
+
+function walkKeyName(key) {
+  if (key === 'dest') return draft?.dest ? shortStopName(draft.dest.name) : 'the destination stop';
+  const s = draft?.stops[Number(key)]?.stop;
+  const typed = $(key === '0' ? 'stop0' : 'stop1').value.trim();
+  return s ? shortStopName(s.name) : typed || 'your stop';
+}
+
+function saveWalkTimer() {
+  try {
+    if (walkTimer && !walkTimer.stopped) localStorage.setItem(TIMER_KEY, JSON.stringify({ key: walkTimer.key, start: walkTimer.start, routeId: editingId }));
+    else localStorage.removeItem(TIMER_KEY);
+  } catch {}
+}
+
+function openWalkTimer(key, start = 0) {
+  walkTimer = { key: String(key), start, stopped: 0 };
+  $('walkTimerTo').textContent = `From your front door to ${walkKeyName(walkTimer.key)}`;
+  renderWalkTimer();
+  if (!$('walkTimer').open) $('walkTimer').showModal();
+  if (start) startTicking();
+}
+
+function startWalkTimer() {
+  walkTimer.start = Date.now();
+  walkTimer.stopped = 0;
+  saveWalkTimer();
+  startTicking();
+  renderWalkTimer();
+}
+
+function startTicking() {
+  clearInterval(walkTick);
+  walkTick = setInterval(renderWalkTimer, 250);
+}
+
+function walkTimerSecs() {
+  if (!walkTimer?.start) return 0;
+  return Math.max(0, Math.round(((walkTimer.stopped || Date.now()) - walkTimer.start) / 1000));
+}
+
+function renderWalkTimer() {
+  if (!walkTimer) return;
+  const secs = walkTimerSecs();
+  const running = Boolean(walkTimer.start && !walkTimer.stopped);
+  const text = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  $('swTime').textContent = text;
+  $('swTime').classList.toggle('running', running);
+  $('swAgain').hidden = !walkTimer.stopped;
+  $('swMain').textContent = !walkTimer.start ? 'Start' : running ? 'Stop' : `Use ${text}`;
+}
+
+function walkTimerMain() {
+  if (!walkTimer.start) return startWalkTimer();
+  if (!walkTimer.stopped) {
+    walkTimer.stopped = Date.now();
+    clearInterval(walkTick);
+    saveWalkTimer();
+    return renderWalkTimer();
+  }
+  // Use it: whole seconds, up to the 30 minutes the steppers allow.
+  const minutes = Math.min(30 * 60, walkTimerSecs()) / 60;
+  if (walkTimer.key === 'dest') draft.destWalk = minutes;
+  else if (draft.stops[Number(walkTimer.key)]) draft.stops[Number(walkTimer.key)].walk = minutes;
+  closeWalkTimer();
+  syncSteppers();
+}
+
+function closeWalkTimer() {
+  clearInterval(walkTick);
+  walkTimer = null;
+  saveWalkTimer();
+  if ($('walkTimer').open) $('walkTimer').close();
+}
+
+/** The app was closed mid-walk: open that route's settings with the stopwatch still counting. */
+function resumeWalkTimer() {
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(TIMER_KEY) || 'null');
+  } catch {}
+  if (!saved) return;
+  const fresh = Date.now() - saved.start < 60 * 60000;
+  if (!fresh || !saved.routeId || !state.routes.some((r) => r.id === saved.routeId)) {
+    try {
+      localStorage.removeItem(TIMER_KEY);
+    } catch {}
+    return;
+  }
+  openSetup(saved.routeId);
+  openWalkTimer(saved.key, saved.start);
 }
 
 function readDraft() {
@@ -841,6 +964,8 @@ function readDraft() {
   draft.label = $('routeLabel').value.trim();
   const route = clone(draft);
   route.stops = route.stops.filter((s) => s.stop);
+  if (state.buffer) route.buffer = state.buffer;
+  else delete route.buffer;
   return route;
 }
 
@@ -1131,6 +1256,18 @@ function wire() {
     syncSetupForm();
     render();
   });
+  $('bufferSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-buffer]');
+    if (b) setBuffer(Number(b.dataset.buffer));
+  });
+  document.querySelectorAll('.time-walk').forEach((b) => b.addEventListener('click', () => openWalkTimer(b.dataset.time)));
+  $('swMain').addEventListener('click', walkTimerMain);
+  $('swAgain').addEventListener('click', () => startWalkTimer());
+  $('swCancel').addEventListener('click', () => closeWalkTimer());
+  $('walkTimer').addEventListener('cancel', (e) => {
+    e.preventDefault(); // Esc or the back gesture shouldn't throw a walk in progress away by accident
+    closeWalkTimer();
+  });
   setupCombo('stopDest', (s) => (draft.dest = s));
   $('gpsBtn').addEventListener('click', useGps);
   $('saveBtn').addEventListener('click', () => saveSetup(false));
@@ -1161,6 +1298,7 @@ function init() {
   applyTheme();
   applyWatch();
   wire();
+  resumeWalkTimer();
   renderFavs();
   renderRoute();
   refresh();

@@ -25,7 +25,9 @@ All three share one module, [`lib/transit.js`](lib/transit.js).
 ## How it decides
 
 - **Two home stops in parallel.** A route starts with one stop; **+ Add a second stop** adds another, each with its own walk time (default: Edlichstraße 2 min with Tram 7, Torgauer Platz 4 min with Trams 3 and 8). Both are checked at the same time and the results are merged.
-- **Walk buffer.** A tram that leaves sooner than your walk takes is *too tight*. It's skipped for the countdown and greyed out as "too tight" in the list.
+- **Time your walk.** Each stop has a **⏱ Time my walk** stopwatch: tap Start at your front door and Stop at the stop, and the exact time (say 3:42) becomes that stop's walk. Timing the real walk beats guessing. The count survives a locked phone.
+- **Spare time.** Settings → *Spare time on each walk*: none, 15 s, 30 s or 1 min on top of every walk, for all routes. The app, Alexa, Claude and ChatGPT all plan with walk + spare time.
+- **Too tight.** A tram that leaves sooner than your walk (plus spare time) takes is *too tight*. It's skipped for the countdown and greyed out as "too tight" in the list.
 - **Punctuality as words.** early (yellow), on time, late (1–3 min), +late (4–7), ++late (8+). Tap a label for the explanation.
 - **Leave advice.** "🚶 Leave in 4 min" while you have time, "🏃 Leave now" once departure ≤ walk time.
 - **Tap to track.** Tap any upcoming departure or stop card to lock the countdown onto that tram until it leaves. "Back to fastest" returns to automatic mode.
