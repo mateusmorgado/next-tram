@@ -32,7 +32,7 @@
   <h2>What is stored online</h2>
   <ul>
     <li><b>Your favorites</b>, under a random personal code the app makes for you, so assistants like Alexa or Claude can answer for your first favorite. Only route data is kept: stop names, their coordinates and walking times. Unused codes are deleted after one year.</li>
-    <li><b>Alexa link</b>: if you say “connect my stops”, the skill stores a one-way hash of the anonymous ID Amazon gives the skill, together with your personal code. Amazon’s ID itself is not stored. The 6-digit number Alexa says is deleted after use or after 10 minutes. The link is deleted after one year without use, or right away when you say <i>“Alexa, ask next tram to forget my stops”</i>.</li>
+    <li><b>Alexa link</b>: if you say “pair”, the skill stores a one-way hash of the anonymous ID Amazon gives the skill, together with your personal code. Amazon’s ID itself is not stored. The 2-digit number Alexa says is deleted after use or after 5 minutes. The link is deleted after one year without use, or right away when you say <i>“Alexa, ask next tram to forget my stops”</i>.</li>
   </ul>
 
   <h2>Who else sees what</h2>
@@ -51,7 +51,7 @@
   <div lang="de">
     <p>NextTram hat keine Konten und fragt nie nach Name, E-Mail, Standort oder Passwort.</p>
     <p><b>Auf deinem Gerät:</b> deine Haltestellen und Einstellungen.</p>
-    <p><b>Online:</b> deine Favoriten unter einem zufälligen persönlichen Code (nur Haltestellennamen, Koordinaten, Gehzeiten; nach einem Jahr ohne Nutzung gelöscht). Wenn du Alexa mit „verbinde meine Haltestellen“ verbindest, speichern wir einen Einweg-Hash der anonymen Kennung, die Amazon dem Skill gibt, zusammen mit deinem Code. Die 6-stellige Nummer wird nach Gebrauch oder nach 10 Minuten gelöscht. „Alexa, sag nächste Tram, vergiss meine Haltestellen“ löscht die Verbindung sofort.</p>
+    <p><b>Online:</b> deine Favoriten unter einem zufälligen persönlichen Code (nur Haltestellennamen, Koordinaten, Gehzeiten; nach einem Jahr ohne Nutzung gelöscht). Wenn du Alexa mit „frag next tram nach dem Code“ verbindest, speichern wir einen Einweg-Hash der anonymen Kennung, die Amazon dem Skill gibt, zusammen mit deinem Code. Die 2-stellige Zahl wird nach Gebrauch oder nach 5 Minuten gelöscht. „Alexa, sag next tram, vergiss meine Haltestellen“ löscht die Verbindung sofort.</p>
     <p><b>Weitergabe:</b> Für die Abfahrtszeiten gehen Haltestellennamen oder Koordinaten an öffentliche Fahrplandienste (Transitous, transport.rest). Gehostet bei Vercel, gespeichert bei Upstash. Sprachanfragen verarbeitet Amazon nach eigenen Bedingungen.</p>
     <p><b>Löschen:</b> Schreib an <a href="mailto:nextTram@morgado.tech">nextTram@morgado.tech</a> mit deinem Code.</p>
   </div>

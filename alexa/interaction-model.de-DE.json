@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "nächste tram",
+      "invocationName": "next tram",
       "intents": [
         {
           "name": "NextTramIntent",
@@ -49,13 +49,22 @@
         {
           "name": "LinkIntent",
           "samples": [
+            "nach dem code",
+            "nach einem code",
+            "nach meinem code",
+            "nach dem kopplungscode",
+            "nach der nummer",
+            "nach einer nummer",
+            "code",
+            "kopplungscode",
+            "koppeln",
+            "verbinden",
+            "mit der app verbinden",
             "verbinde meine haltestellen",
             "meine haltestellen verbinden",
             "verbinde die app",
-            "die app verbinden",
             "nimm meine haltestellen",
-            "nimm meine favoriten",
-            "verbinde meine favoriten"
+            "nimm meine favoriten"
           ]
         },
         {

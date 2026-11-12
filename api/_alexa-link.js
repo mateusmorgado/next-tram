@@ -1,12 +1,12 @@
 // Links an Alexa user to a NextTram personal code, so the public skill answers for their first favorite.
-// "Alexa, ask next tram to connect my stops" → a 6-digit number (10 minutes) → typed into the app → linked.
+// "Alexa, ask next tram to pair" → a 2-digit number (5 minutes) → typed into the app → linked.
 // Only a SHA-256 hash of Amazon's user ID is stored, never the ID itself.
 import { createHash, randomInt } from 'node:crypto';
 import { isValidCode } from '../lib/favorites-sync.js';
 
-const PIN_SECONDS = 10 * 60;
+const PIN_SECONDS = 5 * 60;
 const LINK_SECONDS = 60 * 60 * 24 * 365;
-export const PIN_RE = /^\d{6}$/;
+export const PIN_RE = /^[1-9]\d$/; // 10–99: short to say and type. A wrong guess only links someone else's stops to a stranger's Alexa for a moment, and the number works once.
 
 const hash = (userId) => createHash('sha256').update(String(userId)).digest('hex');
 const pinKey = (pin) => `alexa:pin:${pin}`;
@@ -20,10 +20,10 @@ export function createPairing(store) {
       const code = await store.getKey(userKey(hash(userId)));
       return isValidCode(code) ? code : null;
     },
-    /** A fresh 6-digit number that points at this Alexa user for 10 minutes. */
+    /** A fresh 2-digit number (10–99) that points at this Alexa user for 5 minutes. */
     async start(userId) {
-      for (let i = 0; i < 5; i++) {
-        const pin = String(randomInt(0, 1e6)).padStart(6, '0');
+      for (let i = 0; i < 30; i++) {
+        const pin = String(randomInt(10, 100));
         if (await store.addKey(pinKey(pin), hash(userId), PIN_SECONDS)) return pin;
       }
       return null;

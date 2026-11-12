@@ -1,6 +1,6 @@
 /**
  * POST /api/alexa-link  { pin, code } → { ok: true }
- * The app sends the 6-digit number Alexa said, with its personal code. From then on
+ * The app sends the 2-digit number Alexa said, with its personal code. From then on
  * the Alexa skill answers that Alexa user with the favorites saved under the code.
  */
 import { normalizeCode } from '../lib/favorites-sync.js';

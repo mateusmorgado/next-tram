@@ -118,12 +118,12 @@ test('"connect my stops": Alexa says a number, the app sends it, then Alexa uses
     alexa({ rawBody: JSON.stringify({ context: { System: { user: { userId: 'amzn1.ask.account.TEST' } } }, request: { locale: 'en-US', ...request } }), deps: { verify } });
 
   const linkReply = await ask({ type: 'IntentRequest', intent: { name: 'LinkIntent' } });
-  const pin = linkReply.body.response.card.content.match(/(\d{3}) (\d{3})/).slice(1).join('');
-  assert.match(linkReply.body.response.outputSpeech.ssml, new RegExp(`<say-as interpret-as="digits">${pin}</say-as>`));
+  const pin = linkReply.body.response.card.content.match(/number: (\d\d)\n/)[1];
+  assert.match(linkReply.body.response.outputSpeech.ssml, new RegExp(`<say-as interpret-as="cardinal">${pin}</say-as>`));
   assert.ok(![...db.keys()].some((k) => k.includes('amzn1')), 'only a hash of the Alexa user ID is stored');
 
-  assert.equal((await call(link, { body: { pin: '000000', code: CODE } })).status, 404);
-  assert.equal((await call(link, { body: { pin: `${pin.slice(0, 3)} ${pin.slice(3)}`, code: CODE } })).status, 200);
+  assert.equal((await call(link, { body: { pin: pin === '99' ? '98' : '99', code: CODE } })).status, 404);
+  assert.equal((await call(link, { body: { pin: ` ${pin} `, code: CODE } })).status, 200);
   assert.equal((await call(link, { body: { pin, code: CODE } })).status, 404, 'a number works once');
 
   const { store } = await import('../api/_store.js');
