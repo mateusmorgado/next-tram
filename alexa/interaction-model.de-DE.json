@@ -49,6 +49,11 @@
         {
           "name": "LinkIntent",
           "samples": [
+            "koppeln",
+            "verbinden",
+            "koppel die app",
+            "mit der app koppeln",
+            "mit der app verbinden",
             "verbinde meine haltestellen",
             "meine haltestellen verbinden",
             "verbinde die app",

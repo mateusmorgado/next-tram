@@ -47,6 +47,10 @@
         {
           "name": "LinkIntent",
           "samples": [
+            "pair",
+            "pair my stops",
+            "pair the app",
+            "pair with the app",
             "connect my stops",
             "link my stops",
             "connect the app",

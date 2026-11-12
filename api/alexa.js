@@ -4,7 +4,7 @@
  * "My development endpoint has a certificate from a trusted certificate authority".
  *
  * Every request is checked to come from Amazon (lib/alexa-verify.js), then runs the same handler
- * as alexa-skill.mjs. Each Alexa user can link their own stops ("connect my stops").
+ * as alexa-skill.mjs. Each Alexa user can link their own stops ("pair").
  * A private skill can still add ?code=<personal code> to answer for one fixed set of favorites.
  *
  * Env: ALEXA_SKILL_ID (optional, comma-separated) only accepts requests for these skills.

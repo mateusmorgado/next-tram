@@ -64,7 +64,7 @@ The app saves your favorites online under a personal code. Tap **AI** in the app
 The links point at two Vercel functions that need nothing installed:
 
 - `api/mcp.js`: online MCP server (Streamable HTTP, stateless JSON). Claude: Settings → Connectors → Add custom connector. ChatGPT: Developer mode → Create. URL `https://app.nexttram.morgado.tech/api/mcp?code=<code>`.
-- `api/alexa.js`: the public Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa`. It verifies Amazon's request signature (`lib/alexa-verify.js`). `api/alexa-link.js` links an Alexa user to a personal code ("connect my stops" → 6-digit number → typed into the app).
+- `api/alexa.js`: the public Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa`. It verifies Amazon's request signature (`lib/alexa-verify.js`). `api/alexa-link.js` links an Alexa user to a personal code ("pair" → 6-digit number → typed into the app).
 
 Storage is Upstash Redis on the Vercel project: Vercel → Storage → **Upstash for Redis** → connect it to `next-tram`. That sets `KV_REST_API_URL`/`KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`), which `api/favorites.js` reads. Whoever knows a code can read and replace that list; only stop names, coordinates and walk times are stored.
 
@@ -91,7 +91,7 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 One public custom skill, hosted on Vercel (`api/alexa.js`), no AWS needed. Console setup, store listing texts and certification: **[docs/alexa-skill.md](docs/alexa-skill.md)**. Privacy policy: `privacy.html`.
 
 - "Alexa, ask next tram when is the next tram" / "Alexa, frag nächste Tram wann kommt die nächste Bahn". "…home" uses the trip back.
-- "Alexa, ask next tram to connect my stops": Alexa says a number; type it in the app (AI → Alexa) and Alexa follows your first favorite. "…forget my stops" undoes it.
+- "Alexa, ask next tram to pair": Alexa says a number; type it in the app (AI → Alexa) and Alexa follows your first favorite. "…forget my stops" undoes it.
 - Optional env `ALEXA_SKILL_ID` (comma-separated) makes the endpoint accept only your skill.
 - Self-hosting on AWS Lambda still works: zip `alexa-skill.mjs` with `lib/`, handler `alexa-skill.handler`, optional `NEXT_TRAM_CODE`.
 

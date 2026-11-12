@@ -1,5 +1,5 @@
 // Links an Alexa user to a NextTram personal code, so the public skill answers for their first favorite.
-// "Alexa, ask next tram to connect my stops" → a 6-digit number (10 minutes) → typed into the app → linked.
+// "Alexa, ask next tram to pair" → a 6-digit number (10 minutes) → typed into the app → linked.
 // Only a SHA-256 hash of Amazon's user ID is stored, never the ID itself.
 import { createHash, randomInt } from 'node:crypto';
 import { isValidCode } from '../lib/favorites-sync.js';

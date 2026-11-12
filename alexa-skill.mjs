@@ -3,7 +3,7 @@
  *
  * "Alexa, ask next tram when is the next tram."
  * "Alexa, frag nächste Tram wann kommt die nächste Bahn."
- * "Alexa, ask next tram to connect my stops." → a 6-digit number to type into the app,
+ * "Alexa, ask next tram to pair." → a 6-digit number to type into the app,
  * after which Alexa answers for that user's first favorite.
  *
  * The public skill runs on Vercel: https://app.nexttram.morgado.tech/api/alexa (api/alexa.js
@@ -71,7 +71,7 @@ const userIdOf = (event) => event?.context?.System?.user?.userId || event?.sessi
 
 const TEXT = {
   en: {
-    help: 'Ask: when is the next tram? Or: when is the next tram home? To use the stops from your NextTram app, say: connect my stops.',
+    help: 'Ask: when is the next tram? Or: when is the next tram home? To use the stops from your NextTram app, say: pair.',
     helpReprompt: 'What would you like to know?',
     fallback: 'Sorry, I can only tell you the next tram. Try: when is the next tram?',
     bye: 'Bye!',
@@ -84,7 +84,7 @@ const TEXT = {
     forgotten: 'Done. I forgot your stops and use the built-in ones again.',
   },
   de: {
-    help: 'Frag: wann kommt die nächste Bahn? Oder: wann komme ich nach Hause? Für die Haltestellen aus deiner NextTram App sag: verbinde meine Haltestellen.',
+    help: 'Frag: wann kommt die nächste Bahn? Oder: wann komme ich nach Hause? Für die Haltestellen aus deiner NextTram App sag: koppeln.',
     helpReprompt: 'Was möchtest du wissen?',
     fallback: 'Das kann ich leider nicht. Frag zum Beispiel: wann kommt die nächste Bahn?',
     bye: 'Tschüss!',
@@ -103,7 +103,7 @@ const TEXT = {
  * options: { code, defaultRoute, loadFavorites, pairing }
  *  - code: a personal code fixed for the whole skill (Lambda env or the ?code= link of a private skill)
  *  - pairing: { lookup(userId), start(userId), forget(userId) } links each Alexa user to their own code
- *    (api/alexa.js provides it; see "connect my stops").
+ *    (api/alexa.js provides it; see "pair").
  */
 export async function handler(event, _context, options = envOptions()) {
   const req = event?.request || {};
