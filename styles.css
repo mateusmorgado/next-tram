@@ -167,7 +167,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .install-x:hover { background: var(--surface-2); color: var(--text); }
 .install-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 html.watch .install-card { display: none; }
-@media (max-width: 380px) { .install-card { display: none; } }
+@media (max-width: 300px) { .install-card { display: none; } }
 
 .notice-error { background: var(--now-soft); color: var(--now); }
 
@@ -409,7 +409,7 @@ html.watch .install-card { display: none; }
 
 /* ── Watch view ──
    Applied automatically on tiny screens (Wear OS browsers), or on demand via the ⌚ button. */
-@media (max-width: 380px) {
+@media (max-width: 300px) {
   html:not(.no-watch) .topbar,
   html:not(.no-watch) .favs,
   html:not(.no-watch) .compare,
@@ -430,7 +430,7 @@ html.watch .topbar { position: fixed; top: 16px; right: 16px; }
 html.watch .topbar .brand, html.watch #themeBtn, html.watch #setupBtn, html.watch #aiBtn { display: none; }
 html.watch .favs, html.watch .compare, html.watch .upcoming, html.watch .statusbar, html.watch #errorNotice { display: none !important; }
 
-@media (max-width: 380px) {
+@media (max-width: 300px) {
   html:not(.no-watch) .app { padding: 18px 14px; justify-content: center; gap: 6px; }
 }
 
@@ -451,7 +451,7 @@ html.watch .times { text-align: center; padding: 0; font-size: 12px; line-height
 html.watch .leave { justify-content: center; padding: 6px 14px; border-radius: 999px; font-size: 14px; margin: 8px auto 0; width: fit-content; }
 html.watch .leave small, html.watch .leave .link { display: none; }
 
-@media (max-width: 380px) {
+@media (max-width: 300px) {
   html:not(.no-watch) .route { background: none; border: 0; padding: 0; justify-content: center; }
   html:not(.no-watch) .route-text { text-align: center; font-size: 13px; flex: 0 1 auto; }
   html:not(.no-watch) .hero { border: 0; background: none; box-shadow: none; text-align: center; }
@@ -474,7 +474,7 @@ html.watch .leave small, html.watch .leave .link { display: none; }
 html.watch .rt-full { display: none; }
 html.watch .rt-short { display: inline; }
 html.watch .topbar { z-index: 2; }
-@media (max-width: 380px) {
+@media (max-width: 300px) {
   html:not(.no-watch) .rt-full { display: none; }
   html:not(.no-watch) .rt-short { display: inline; }
   html:not(.no-watch) .swap-btn { width: 30px; height: 30px; }
@@ -485,7 +485,7 @@ html.watch .topbar { z-index: 2; }
   html:not(.no-watch) .hero-line { margin-top: 4px; font-size: 13px; }
   html:not(.no-watch) .leave { font-size: 14px; padding: 6px 14px; }
 }
-@media (max-width: 380px) and (max-height: 400px) {
+@media (max-width: 300px) and (max-height: 400px) {
   html:not(.no-watch) .app { padding: 22px 26px; }
 }
 
@@ -523,7 +523,7 @@ main { display: grid; gap: 14px; }
 .watch-nav, .watch-pos { display: none; }
 html.watch .watch-nav,
 html.watch .watch-pos { display: grid; }
-@media (max-width: 380px) {
+@media (max-width: 300px) {
   html:not(.no-watch) .watch-nav,
   html:not(.no-watch) .watch-pos { display: grid; }
 }
@@ -541,7 +541,7 @@ html.watch .watch-pos { display: grid; }
 html.watch .monogram,
 html.watch .hero-main .monogram { font-size: 150px; top: 50%; right: 50%; transform: translate(50%, -55%); background: linear-gradient(90deg, transparent 10%, rgb(255 255 255 / 0.06) 75%); -webkit-background-clip: text; background-clip: text; }
 html.watch .monogram.line-mark { background: linear-gradient(90deg, transparent 10%, color-mix(in srgb, var(--mono-tint, #fff) 22%, transparent) 75%); -webkit-background-clip: text; background-clip: text; }
-@media (max-width: 380px) {
+@media (max-width: 300px) {
   html:not(.no-watch) .monogram { font-size: 130px; top: 50%; right: 50%; transform: translate(50%, -55%); }
   html:not(.no-watch) .watch-nav.next { right: -10px; }
   html:not(.no-watch) .watch-nav.prev { left: -10px; }
@@ -556,7 +556,7 @@ html.watch .hero, html.watch .hero-main { overflow: visible; }
 /* The mark fills almost the whole face, up and to the right, the round edge may cut it, faint behind everything. */
 html.watch .monogram,
 html.watch .hero-main .monogram { position: fixed; font-size: 76vmin; top: 0; right: -4vmin; transform: translate(0, 0); z-index: 0; }
-@media (max-width: 380px) {
+@media (max-width: 300px) {
   html:not(.no-watch) .times,
   html:not(.no-watch) .watch-pos { display: none !important; }
   html:not(.no-watch) .hero, html:not(.no-watch) .hero-main { overflow: visible; }

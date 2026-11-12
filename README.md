@@ -15,7 +15,7 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 
 - an installable **PWA** for Android phones and Wear OS watches,
 - an **MCP server** so Claude (or any MCP client) can answer "next tram",
-- an **Alexa skill** ("Alexa, ask Next Tram when the next tram is"),
+- an **Alexa skill** ("Alexa, ask Next Tram: when is the next tram"),
 - a **Siri Shortcut** ("Hey Siri, Next Tram") on iPhone and Apple Watch.
 
 All three share one module, [`lib/transit.js`](lib/transit.js).
@@ -90,7 +90,7 @@ Easiest: follow the Alexa guide in the app (AI button). It points the skill at `
 
 1. Zip `alexa-skill.mjs` together with the `lib/` folder and upload it to an AWS Lambda function (Node.js 20). Handler: `alexa-skill.handler`.
 2. In the Alexa developer console create a custom skill, paste `alexa/interaction-model.en-US.json` (and/or `de-DE`) into the JSON editor, and point the endpoint at the Lambda.
-3. "Alexa, ask Next Tram when the next tram is" / "Alexa, frag Nächste Bahn, wann die nächste Bahn kommt". "…next tram home" uses the trip back.
+3. "Alexa, ask Next Tram: when is the next tram" / "Alexa, frag Nächste Bahn, wann die nächste Bahn kommt". "…next tram home" uses the trip back.
 
 ## Siri (Apple Shortcuts)
 

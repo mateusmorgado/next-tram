@@ -1,7 +1,7 @@
 /**
  * NextTram Alexa skill — AWS Lambda handler (Node.js 18+ runtime, no dependencies).
  *
- * "Alexa, ask Next Tram when the next tram is."
+ * "Alexa, ask Next Tram: when is the next tram?"
  * "Alexa, frag Nächste Bahn, wann die nächste Bahn kommt."
  *
  * Easiest: no Lambda at all. Point the skill's HTTPS endpoint at
