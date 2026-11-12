@@ -423,7 +423,9 @@ function capUpcoming() {
   }
   const last = rows[MAX_UPCOMING - 1];
   // A sliver of the 8th row peeks out so it's clear the list scrolls.
-  const bottom = last.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop;
+  // Rects are in zoomed pixels when the page is zoomed for Chrome's desktop-site mode (index.html).
+  const zoom = list.currentCSSZoom || 1;
+  const bottom = (last.getBoundingClientRect().bottom - list.getBoundingClientRect().top) / zoom + list.scrollTop;
   list.style.maxHeight = `${Math.round(bottom + 14)}px`;
   list.classList.add('scrolls');
 }
@@ -1214,7 +1216,7 @@ function wire() {
 
   // Watch: tap the route to cycle favorites.
   $('routeText').addEventListener('click', () => {
-    const watchy = document.documentElement.classList.contains('watch') || matchMedia('(max-width: 300px)').matches;
+    const watchy = document.documentElement.classList.contains('watch') || matchMedia('(max-width: 300px) and (min-aspect-ratio: 2/3)').matches;
     if (!watchy || state.routes.length < 2) return;
     const i = state.routes.findIndex((r) => r.id === state.activeId);
     switchRoute(state.routes[(i + 1) % state.routes.length].id);

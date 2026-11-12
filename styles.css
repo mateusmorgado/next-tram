@@ -167,7 +167,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .install-x:hover { background: var(--surface-2); color: var(--text); }
 .install-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 html.watch .install-card { display: none; }
-@media (max-width: 300px) { .install-card { display: none; } }
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) { .install-card { display: none; } }
 
 .notice-error { background: var(--now-soft); color: var(--now); }
 
@@ -318,10 +318,12 @@ html.watch .install-card { display: none; }
 }
 .stop-card.best { border-color: var(--go); box-shadow: inset 0 0 0 1px var(--go); }
 .stop-card .name { font-weight: 650; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stop-card .meta { font-size: 12px; color: var(--text-3); display: flex; justify-content: space-between; gap: 6px; }
+.stop-card .meta { font-size: 12px; color: var(--text-3); display: flex; justify-content: space-between; gap: 6px; min-width: 0; white-space: nowrap; }
+.stop-card .meta > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.stop-card .meta .best-tag { flex: none; }
 .stop-card .best-tag { color: var(--go); font-weight: 700; }
-.stop-card .next { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
-.stop-card .next .in { font-size: 20px; font-weight: 700; }
+.stop-card .next { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 2px; font-variant-numeric: tabular-nums; }
+.stop-card .next .in { font-size: 20px; font-weight: 700; white-space: nowrap; }
 .stop-card .next .at { font-size: 13px; color: var(--text-2); }
 .stop-card .none { font-size: 13px; color: var(--text-3); }
 .stop-card:disabled { cursor: default; }
@@ -350,6 +352,10 @@ html.watch .install-card { display: none; }
 
 /* ── Status bar ── */
 .statusbar { display: flex; justify-content: space-between; align-items: center; color: var(--text-3); font-size: 13px; margin-top: auto; padding-top: 4px; }
+.promo-link { align-self: center; margin-top: -8px; padding: 6px 8px; font-size: 13px; color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
+.promo-link::after { content: ' ↗'; }
+.promo-link:hover { color: var(--text-2); }
+html.watch .promo-link { display: none; }
 .text-btn { border: 0; background: none; display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-weight: 600; font-size: 14px; padding: 8px 4px; }
 .text-btn svg { width: 18px; height: 18px; }
 .loading #refreshBtn svg { animation: spin 0.9s linear infinite; }
@@ -392,7 +398,7 @@ html.watch .install-card { display: none; }
 .stepper button { width: 36px; height: 100%; border: 0; background: none; font-size: 20px; color: var(--text-2); }
 .stepper output { min-width: 64px; text-align: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .segmented { display: flex; background: var(--surface-2); border-radius: var(--radius-sm); padding: 3px; gap: 3px; }
-.segmented button { flex: 1; height: 38px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; font-weight: 600; color: var(--text-2); }
+.segmented button { flex: 1; min-width: 0; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; height: 38px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; font-weight: 600; color: var(--text-2); }
 .segmented button[aria-checked='true'] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
 .gps-btn { justify-self: start; margin-top: -10px; }
 .time-walk { justify-self: start; font-size: 13px; padding: 2px 2px 0; }
@@ -423,7 +429,7 @@ html.watch .install-card { display: none; }
 
 /* ── Watch view ──
    Applied automatically on tiny screens (Wear OS browsers), or on demand via the ⌚ button. */
-@media (max-width: 300px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) {
   html:not(.no-watch) .topbar,
   html:not(.no-watch) .favs,
   html:not(.no-watch) .compare,
@@ -434,7 +440,7 @@ html.watch .install-card { display: none; }
 
 html.watch body { display: grid; place-items: center; min-height: 100dvh; }
 html.watch .app {
-  width: 360px; height: 360px; min-height: 0; border-radius: 50%; padding: 34px 30px;
+  width: min(360px, calc(100vw - 24px)); height: auto; aspect-ratio: 1; min-height: 0; border-radius: 50%; padding: 34px 30px;
   background: #000; color: #fff; overflow: hidden; justify-content: center; gap: 6px;
   box-shadow: 0 0 0 10px #2a2b30, 0 30px 60px rgb(0 0 0 / 0.35);
   --surface: #000; --surface-2: #1b1c20; --line: #000; --text: #fff; --text-2: #c9cbd1; --text-3: #8b8d94;
@@ -444,7 +450,7 @@ html.watch .topbar { position: fixed; top: 16px; right: 16px; }
 html.watch .topbar .brand, html.watch #themeBtn, html.watch #setupBtn, html.watch #aiBtn { display: none; }
 html.watch .favs, html.watch .compare, html.watch .upcoming, html.watch .statusbar, html.watch #errorNotice { display: none !important; }
 
-@media (max-width: 300px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) {
   html:not(.no-watch) .app { padding: 18px 14px; justify-content: center; gap: 6px; }
 }
 
@@ -465,7 +471,7 @@ html.watch .times { text-align: center; padding: 0; font-size: 12px; line-height
 html.watch .leave { justify-content: center; padding: 6px 14px; border-radius: 999px; font-size: 14px; margin: 8px auto 0; width: fit-content; }
 html.watch .leave small, html.watch .leave .link { display: none; }
 
-@media (max-width: 300px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) {
   html:not(.no-watch) .route { background: none; border: 0; padding: 0; justify-content: center; }
   html:not(.no-watch) .route-text { text-align: center; font-size: 13px; flex: 0 1 auto; }
   html:not(.no-watch) .hero { border: 0; background: none; box-shadow: none; text-align: center; }
@@ -488,7 +494,7 @@ html.watch .leave small, html.watch .leave .link { display: none; }
 html.watch .rt-full { display: none; }
 html.watch .rt-short { display: inline; }
 html.watch .topbar { z-index: 2; }
-@media (max-width: 300px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) {
   html:not(.no-watch) .rt-full { display: none; }
   html:not(.no-watch) .rt-short { display: inline; }
   html:not(.no-watch) .swap-btn { width: 30px; height: 30px; }
@@ -499,7 +505,7 @@ html.watch .topbar { z-index: 2; }
   html:not(.no-watch) .hero-line { margin-top: 4px; font-size: 13px; }
   html:not(.no-watch) .leave { font-size: 14px; padding: 6px 14px; }
 }
-@media (max-width: 300px) and (max-height: 400px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) and (max-height: 400px) {
   html:not(.no-watch) .app { padding: 22px 26px; }
 }
 
@@ -537,7 +543,7 @@ main { display: grid; gap: 14px; }
 .watch-nav, .watch-pos { display: none; }
 html.watch .watch-nav,
 html.watch .watch-pos { display: grid; }
-@media (max-width: 300px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) {
   html:not(.no-watch) .watch-nav,
   html:not(.no-watch) .watch-pos { display: grid; }
 }
@@ -555,7 +561,7 @@ html.watch .watch-pos { display: grid; }
 html.watch .monogram,
 html.watch .hero-main .monogram { font-size: 150px; top: 50%; right: 50%; transform: translate(50%, -55%); background: linear-gradient(90deg, transparent 10%, rgb(255 255 255 / 0.06) 75%); -webkit-background-clip: text; background-clip: text; }
 html.watch .monogram.line-mark { background: linear-gradient(90deg, transparent 10%, color-mix(in srgb, var(--mono-tint, #fff) 22%, transparent) 75%); -webkit-background-clip: text; background-clip: text; }
-@media (max-width: 300px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) {
   html:not(.no-watch) .monogram { font-size: 130px; top: 50%; right: 50%; transform: translate(50%, -55%); }
   html:not(.no-watch) .watch-nav.next { right: -10px; }
   html:not(.no-watch) .watch-nav.prev { left: -10px; }
@@ -570,10 +576,34 @@ html.watch .hero, html.watch .hero-main { overflow: visible; }
 /* The mark fills almost the whole face, up and to the right, the round edge may cut it, faint behind everything. */
 html.watch .monogram,
 html.watch .hero-main .monogram { position: fixed; font-size: 76vmin; top: 0; right: -4vmin; transform: translate(0, 0); z-index: 0; }
-@media (max-width: 300px) {
+@media (max-width: 300px) and (min-aspect-ratio: 2/3) {
   html:not(.no-watch) .times,
   html:not(.no-watch) .watch-pos { display: none !important; }
   html:not(.no-watch) .hero, html:not(.no-watch) .hero-main { overflow: visible; }
   html:not(.no-watch) .monogram { position: fixed; font-size: 76vmin; top: 0; right: -4vmin; transform: translate(0, 0); z-index: 0; }
 }
 .ai-copy-row .ai-copy-btn { flex: 1 1 0; padding: 0 10px; white-space: nowrap; }
+
+/* ── Narrow phones (and phones with large text, where Android zooms the page) ── */
+@media (max-width: 380px) {
+  .app { padding-left: 12px; padding-right: 12px; gap: 12px; }
+  .favs { margin: 0 -12px; padding: 2px 12px; }
+  .topbar-actions { gap: 0; }
+  .icon-btn { width: 38px; }
+  .brand { gap: 8px; min-width: 0; }
+  .hero-main { padding: 16px 16px 14px; }
+  .leave { padding: 12px 16px; font-size: 16px; }
+  .count-num { font-size: 76px; }
+  .compare { gap: 8px; }
+  .stop-card { padding: 10px 12px; }
+  .stop-card .next .in { font-size: 18px; }
+  .trip { grid-template-columns: 44px auto minmax(0, 1fr) auto; gap: 8px; padding: 10px 12px; }
+  .stepper output { min-width: 56px; }
+  .segmented button { font-size: 13px; }
+}
+
+/* Desktop-site mode on a phone: the page is zoomed (see index.html), so viewport heights shrink back. */
+html.desktop-mode .app { min-height: calc(100dvh / var(--z, 1)); }
+html.desktop-mode .sheet { height: calc(100dvh / var(--z, 1)); max-height: calc(100dvh / var(--z, 1)); width: 100%; }
+html.desktop-mode .info-pop { width: min(360px, calc(100vw / var(--z, 1) - 32px)); }
+html.desktop-mode .ai-pop { width: min(480px, calc(100vw / var(--z, 1) - 24px)); max-height: calc(100dvh / var(--z, 1) - 24px); }

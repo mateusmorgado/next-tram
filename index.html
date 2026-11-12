@@ -20,6 +20,23 @@
       if (s.theme === 'light' || s.theme === 'dark') document.documentElement.dataset.theme = s.theme;
       if (s.watch) document.documentElement.classList.add('watch');
     } catch {}
+    // Chrome's "Desktop site" mode ignores the viewport tag and lays the page out ~980px wide,
+    // so on a phone everything shrinks into a thin column. Zoom back up to the real screen width.
+    (function fitDesktopMode() {
+      const root = document.documentElement;
+      const touch = navigator.maxTouchPoints > 0;
+      const z = innerWidth / screen.width;
+      if (touch && screen.width < 600 && z > 1.25) {
+        root.style.zoom = z.toFixed(3);
+        root.style.setProperty('--z', z.toFixed(3));
+        root.classList.add('desktop-mode');
+      } else {
+        root.style.zoom = '';
+        root.style.removeProperty('--z');
+        root.classList.remove('desktop-mode');
+      }
+      if (!window.__fitBound) { window.__fitBound = true; addEventListener('resize', fitDesktopMode); }
+    })();
   </script>
   <script type="module" src="app.js"></script>
 </head>
@@ -103,6 +120,7 @@
         Refresh
       </button>
     </footer>
+    <a class="promo-link" href="https://nexttram.morgado.tech" target="_blank" rel="noopener">About NextTram</a>
   </div>
 
   <dialog class="info-pop" id="delayInfo" aria-labelledby="delayInfoTitle">
