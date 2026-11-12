@@ -1,6 +1,7 @@
 # NextTram
 
 <p align="center"><b><a href="https://app.nexttram.morgado.tech">👉 Open the app: app.nexttram.morgado.tech</a></b></p>
+<p align="center"><a href="https://nexttram.morgado.tech">What it is and how it works: nexttram.morgado.tech</a></p>
 
 <p align="center">
   <img src="docs/screenshots/phone-flow.gif" alt="Animation: tapping a stop card tracks that tram, back to fastest, then the trip back" width="270">
