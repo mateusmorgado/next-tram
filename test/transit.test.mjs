@@ -14,6 +14,7 @@ import {
   createTransitClient,
   describePlan,
   isCatchable,
+  formatWalk,
 } from '../lib/transit.js';
 import { DEFAULT_ROUTES } from '../lib/stops.js';
 
@@ -342,5 +343,45 @@ describe('voice answer rules', () => {
     const conns = [c(0, 'Tram 8', 'Hbf', 4, 0), c(0, 'Tram 3', 'Hbf', 12, 0)];
     assert.equal(say(conns, 1, { reversed: true }), 'Tram 8 leaves in 4 minutes. Then Tram 3 in 12 minutes.');
     assert.equal(say(conns, 1, { reversed: true, lang: 'de' }), 'Tram 8 fährt in 4 Minuten. Danach Tram 3 in 12 Minuten.');
+  });
+});
+
+describe('stopwatch walk times and spare time', () => {
+  const route = {
+    city: 'leipzig',
+    stops: [{ stop: { name: 'Edlichstraße' }, walk: 222 / 60 }, { stop: { name: 'Torgauer Platz' }, walk: 0 }],
+    dest: { name: 'Hbf' },
+    destWalk: 3,
+    buffer: 30,
+  };
+
+  test('walk keeps its seconds and the buffer goes on top, but not when you are at the stop', () => {
+    const [a, b] = routeOptions(route);
+    assert.equal(Math.round(a.walk * 60), 222 + 30);
+    assert.equal(Math.round(a.walkBase * 60), 222);
+    assert.equal(a.buffer, 30);
+    assert.equal(b.walk, 0);
+    assert.equal(b.buffer, 0);
+    const [back] = routeOptions(route, true);
+    assert.equal(back.walk, 3.5);
+    assert.equal(routeOptions({ ...route, buffer: undefined })[0].walk, 3.7);
+  });
+
+  test('walk times read as minutes, or m:ss from the stopwatch', () => {
+    assert.equal(formatWalk(4), '4 min');
+    assert.equal(formatWalk(222 / 60), '3:42 min');
+    assert.equal(formatWalk(0.75), '0:45 min');
+  });
+
+  test('the leave time counts walk plus buffer, for the app and the assistants', () => {
+    const now = Date.parse('2026-11-12T10:00:00Z');
+    const walk = routeOptions(route)[0].walk; // 4:12
+    const conn = { slot: 0, lineName: 'Tram 7', stopName: 'Edlichstraße', depMs: now + 10 * 60000, walk };
+    assert.deepEqual(leaveAdvice(conn, now), { now: false, minutes: 5 });
+    assert.equal(describePlan(planTrips([conn], now), now), 'Leave in 5 minutes for Tram 7.');
+    // 4 min 20 s before it leaves: fine without the buffer, too tight with it
+    const soon = { ...conn, depMs: now + 260000 };
+    assert.equal(isCatchable(soon, now), true);
+    assert.equal(isCatchable({ ...soon, depMs: now + 240000 }, now), false);
   });
 });

@@ -390,11 +390,18 @@ html.watch .install-card { display: none; }
 .suggestions li.muted { color: var(--text-3); cursor: default; background: none; font-size: 13px; }
 .stepper { display: flex; align-items: center; height: 46px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); flex: none; }
 .stepper button { width: 36px; height: 100%; border: 0; background: none; font-size: 20px; color: var(--text-2); }
-.stepper output { min-width: 50px; text-align: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stepper output { min-width: 64px; text-align: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .segmented { display: flex; background: var(--surface-2); border-radius: var(--radius-sm); padding: 3px; gap: 3px; }
 .segmented button { flex: 1; height: 38px; border: 0; border-radius: 9px; background: transparent; font-size: 14px; font-weight: 600; color: var(--text-2); }
 .segmented button[aria-checked='true'] { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
 .gps-btn { justify-self: start; margin-top: -10px; }
+.time-walk { justify-self: start; font-size: 13px; padding: 2px 2px 0; }
+.stopwatch .hint { margin-top: -8px; font-size: 14px; color: var(--text-2); }
+.sw-tip { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text-2); background: var(--surface-2); border-radius: var(--radius-sm); padding: 10px 12px; }
+.sw-time { text-align: center; font-size: 56px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; padding: 6px 0; }
+.sw-time.running { color: var(--go); }
+.sw-actions { display: flex; gap: 8px; align-items: center; }
+.sw-actions [hidden] { display: none; }
 .gps-btn:disabled { opacity: 0.7; }
 .field-label span.no-pad { margin: 0; font-weight: inherit; color: inherit; }
 .field-label-row { display: flex; align-items: center; justify-content: space-between; }

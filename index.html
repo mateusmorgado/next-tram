@@ -121,6 +121,21 @@
     </form>
   </dialog>
 
+  <dialog class="info-pop stopwatch" id="walkTimer" aria-labelledby="walkTimerTitle">
+    <form method="dialog">
+      <h2 id="walkTimerTitle">Time your walk</h2>
+      <p class="hint" id="walkTimerTo"></p>
+      <p class="sw-tip">For the best result, use the stopwatch on a real walk: tap <b>Start</b> as you step out of your front door and <b>Stop</b> when you reach the stop. Walk at your normal pace. You can lock your phone on the way.</p>
+      <div class="sw-time" id="swTime" role="timer" aria-live="off">0:00</div>
+      <div class="sw-actions">
+        <button type="button" class="btn btn-ghost" id="swCancel">Cancel</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" id="swAgain" hidden>Again</button>
+        <button type="button" class="btn btn-primary" id="swMain">Start</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog class="sheet" id="setupSheet" aria-labelledby="setupTitle">
     <form method="dialog" class="sheet-body" id="setupForm" autocomplete="off">
       <div class="sheet-head">
@@ -151,6 +166,7 @@
             <button type="button" data-step="1" aria-label="More walking time">+</button>
           </div>
         </div>
+        <button type="button" class="text-btn time-walk" data-time="0">⏱ Time my walk</button>
       </div>
 
       <button type="button" class="text-btn gps-btn" id="gpsBtn">
@@ -160,7 +176,7 @@
 
       <div class="add-stop" id="addStopWrap">
         <button type="button" class="btn btn-ghost add-stop-btn" id="addStopBtn">+ Add a second stop</button>
-        <p class="hint">Live between two stops? NextTram checks both and shows whichever gets you there first.</p>
+        <p class="hint">NextTram checks both and picks the faster one.</p>
       </div>
 
       <div class="field stop-field" data-slot="1" id="stop1Field" hidden>
@@ -179,6 +195,7 @@
             <button type="button" data-step="1" aria-label="More walking time">+</button>
           </div>
         </div>
+        <button type="button" class="text-btn time-walk" data-time="1">⏱ Time my walk</button>
       </div>
 
       <div class="field stop-field" data-slot="dest">
@@ -198,6 +215,7 @@
             <output>3 min</output>
             <button type="button" data-step="1" aria-label="More walking time">+</button>
           </div>
+          <button type="button" class="text-btn time-walk" data-time="dest">⏱ Time my walk</button>
         </div>
       </div>
 
@@ -213,6 +231,16 @@
       <div class="field">
         <label class="field-label" for="routeLabel">Name</label>
         <input id="routeLabel" class="input" type="text" placeholder="e.g. Work" maxlength="24" />
+      </div>
+
+      <div class="field">
+        <span class="field-label">Spare time on each walk <span>all routes</span></span>
+        <div class="segmented" id="bufferSeg" role="radiogroup" aria-label="Spare time on each walk">
+          <button type="button" role="radio" data-buffer="0">None</button>
+          <button type="button" role="radio" data-buffer="15">15 s</button>
+          <button type="button" role="radio" data-buffer="30">30 s</button>
+          <button type="button" role="radio" data-buffer="60">1 min</button>
+        </div>
       </div>
 
       <div class="field look-field">
