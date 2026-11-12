@@ -423,7 +423,9 @@ function capUpcoming() {
   }
   const last = rows[MAX_UPCOMING - 1];
   // A sliver of the 8th row peeks out so it's clear the list scrolls.
-  const bottom = last.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop;
+  // Rects are in zoomed pixels when the page is zoomed for Chrome's desktop-site mode (index.html).
+  const zoom = list.currentCSSZoom || 1;
+  const bottom = (last.getBoundingClientRect().bottom - list.getBoundingClientRect().top) / zoom + list.scrollTop;
   list.style.maxHeight = `${Math.round(bottom + 14)}px`;
   list.classList.add('scrolls');
 }

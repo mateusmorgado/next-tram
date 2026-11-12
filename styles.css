@@ -601,3 +601,9 @@ html.watch .hero-main .monogram { position: fixed; font-size: 76vmin; top: 0; ri
   .stepper output { min-width: 56px; }
   .segmented button { font-size: 13px; }
 }
+
+/* Desktop-site mode on a phone: the page is zoomed (see index.html), so viewport heights shrink back. */
+html.desktop-mode .app { min-height: calc(100dvh / var(--z, 1)); }
+html.desktop-mode .sheet { height: calc(100dvh / var(--z, 1)); max-height: calc(100dvh / var(--z, 1)); width: 100%; }
+html.desktop-mode .info-pop { width: min(360px, calc(100vw / var(--z, 1) - 32px)); }
+html.desktop-mode .ai-pop { width: min(480px, calc(100vw / var(--z, 1) - 24px)); max-height: calc(100dvh / var(--z, 1) - 24px); }
