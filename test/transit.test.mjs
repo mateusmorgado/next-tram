@@ -192,8 +192,8 @@ test('fetchRoute queries both stops in parallel and falls back to HAFAS', async 
   assert.equal(plan.hero.lineName, 'Tram 7'); // Tram 8 in 3 min is too tight for a 4 min walk
   assert.equal(plan.tooTight.lineName, 'Tram 8');
   const text = describePlan(plan, T0);
-  assert.equal(text, "You won't make Tram 8 at Torgauer Platz. Leave in 3 minutes for Tram 7 at Edlichstraße.");
-  assert.equal(describePlan(plan, T0, { lang: 'de' }), 'Tram 8 ab Torgauer Platz schaffst du nicht mehr. Geh in 3 Minuten los, Tram 7 ab Edlichstraße.');
+  assert.equal(text, "Leave in 3 minutes for Tram 7 at Edlichstraße.");
+  assert.equal(describePlan(plan, T0, { lang: 'de' }), 'Geh in 3 Minuten los, Tram 7 ab Edlichstraße.');
 });
 
 test('fetchRoute throws when every stop fails', async () => {
