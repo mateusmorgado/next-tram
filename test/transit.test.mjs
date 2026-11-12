@@ -14,6 +14,7 @@ import {
   createTransitClient,
   describePlan,
   isCatchable,
+  needsRun,
   formatWalk,
 } from '../lib/transit.js';
 import { DEFAULT_ROUTES } from '../lib/stops.js';
@@ -111,19 +112,48 @@ const conn = (slot, depMin, walk, extra = {}) => ({
   ...extra,
 });
 
-test('walk buffer: too-tight tram is skipped and reported', () => {
-  const list = [conn(0, 1, 2), conn(1, 3, 4), conn(1, 6, 4), conn(0, 9, 2)];
+test('a tram you cannot make even running is skipped and reported', () => {
+  const list = [conn(0, 0.5, 2), conn(1, 2, 4), conn(1, 6, 4), conn(0, 9, 2)];
   const plan = planTrips(list, T0, { slots: 2 });
   assert.equal(plan.hero.id, '1:6');
-  assert.equal(plan.tooTight.id, '0:1');
+  assert.equal(plan.tooTight.id, '0:0.5');
   assert.equal(plan.perSlot[0].next.id, '0:9');
   assert.equal(plan.perSlot[1].next.id, '1:6');
   assert.equal(plan.manual, false);
 });
 
-test('catchable boundary is exactly the walk time', () => {
-  assert.ok(isCatchable(conn(0, 2, 2), T0));
-  assert.ok(!isCatchable(conn(0, 2, 2), T0 + 1000));
+test('running saves at most a minute, and at most half the walk', () => {
+  // 1 min left: a 2 min walk is a run, a 3 min walk is missed.
+  assert.ok(isCatchable(conn(0, 1, 2), T0));
+  assert.ok(needsRun(conn(0, 1, 2), T0));
+  assert.ok(!isCatchable(conn(0, 1, 3), T0));
+  assert.ok(!isCatchable(conn(0, 1, 2), T0 + 1000));
+  // The screenshot case: 0:43 left with a 4 min walk is missed.
+  assert.ok(!isCatchable(conn(0, 43 / 60, 4), T0));
+  // On time on foot: no running needed.
+  assert.ok(isCatchable(conn(0, 2, 2), T0) && !needsRun(conn(0, 2, 2), T0));
+  // A 1 min walk can't be run in under 30 s.
+  assert.ok(isCatchable(conn(0, 0.5, 1), T0));
+  assert.ok(!isCatchable(conn(0, 0.4, 1), T0));
+  // A 1 min buffer cancels the running: you need the plain walk time.
+  const buffered = { ...conn(0, 2, 3), walkBase: 2 };
+  assert.ok(isCatchable(buffered, T0) && needsRun(buffered, T0));
+  assert.ok(!isCatchable(buffered, T0 + 1000));
+});
+
+test('a tapped tram you can no longer make is dropped', () => {
+  const list = [conn(1, 4, 4), conn(1, 12, 4)];
+  assert.equal(planTrips(list, T0, { selectedId: '1:4' }).hero.id, '1:4');
+  const later = planTrips(list, T0 + 3 * 60000 + 17000, { selectedId: '1:4' }); // 0:43 left, 4 min walk
+  assert.equal(later.hero.id, '1:12');
+  assert.equal(later.manual, false);
+});
+
+test('voice says "run" when you only make it running', () => {
+  const plan = planTrips([conn(0, 1, 2), conn(0, 9, 2)], T0);
+  assert.equal(describePlan(plan, T0), 'Run now for Tram 7, it goes in 1 minute. Or leave in 7 minutes for Tram 7.');
+  assert.equal(describePlan(plan, T0, { lang: 'de' }), 'Lauf jetzt los, Tram 7, fährt in 1 Minute. Oder in 7 Minuten, Tram 7.');
+  assert.equal(leaveAdvice(conn(0, 1, 2), T0).run, true);
 });
 
 test('tapping a trip locks the hero until it leaves', () => {
@@ -190,11 +220,12 @@ test('fetchRoute queries both stops in parallel and falls back to HAFAS', async 
   assert.equal(options[1].from.hafasId, '555');
 
   const plan = planTrips(connections, T0, { slots: 2 });
-  assert.equal(plan.hero.lineName, 'Tram 7'); // Tram 8 in 3 min is too tight for a 4 min walk
-  assert.equal(plan.tooTight.lineName, 'Tram 8');
+  assert.equal(plan.hero.lineName, 'Tram 8'); // Tram 8 in 3 min with a 4 min walk: you make it running
+  assert.equal(plan.tooTight, null);
   const text = describePlan(plan, T0);
-  assert.equal(text, "Leave in 3 minutes for Tram 7 at Edlichstraße.");
-  assert.equal(describePlan(plan, T0, { lang: 'de' }), 'Geh in 3 Minuten los, Tram 7 ab Edlichstraße.');
+  assert.equal(text, 'Run now for Tram 8 at Torgauer Platz, it goes in 3 minutes. Or leave in 3 minutes for Tram 7 at Edlichstraße.');
+  assert.equal(planTrips(connections, T0 + 30000, { slots: 2 }).hero.lineName, 'Tram 7'); // 2:30 left: missed
+  assert.equal(describePlan(planTrips(connections, T0 + 30000, { slots: 2 }), T0 + 30000, { lang: 'de' }), 'Geh in 2 Minuten los, Tram 7 ab Edlichstraße.');
 });
 
 test('fetchRoute throws when every stop fails', async () => {
@@ -379,9 +410,9 @@ describe('stopwatch walk times and spare time', () => {
     const conn = { slot: 0, lineName: 'Tram 7', stopName: 'Edlichstraße', depMs: now + 10 * 60000, walk };
     assert.deepEqual(leaveAdvice(conn, now), { now: false, minutes: 5 });
     assert.equal(describePlan(planTrips([conn], now), now), 'Leave in 5 minutes for Tram 7.');
-    // 4 min 20 s before it leaves: fine without the buffer, too tight with it
-    const soon = { ...conn, depMs: now + 260000 };
+    // 4:12 walk with buffer, running saves a minute: 3:12 is the last chance
+    const soon = { ...conn, walkBase: 222 / 60, depMs: now + 192000 };
     assert.equal(isCatchable(soon, now), true);
-    assert.equal(isCatchable({ ...soon, depMs: now + 240000 }, now), false);
+    assert.equal(isCatchable({ ...soon, depMs: now + 191000 }, now), false);
   });
 });

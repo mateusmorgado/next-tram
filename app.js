@@ -5,6 +5,7 @@ import {
   createTransitClient,
   fetchRoute,
   planTrips,
+  isCatchable,
   leaveAdvice,
   minutesUntil,
   formatClock,
@@ -153,7 +154,7 @@ function render() {
   const route = activeRoute();
   const slots = routeOptions(route, reversed).length;
   const plan = planTrips(connections, now, { selectedId, slots, byArrival: reversed });
-  if (selectedId && !plan.upcoming.some((c) => c.id === selectedId)) selectedId = null;
+  if (selectedId && plan.hero?.id !== selectedId) selectedId = null; // left, or missed even running
   lastPlan = plan;
 
   renderHero(plan, now, slots);
@@ -236,7 +237,7 @@ function heroMark(c, placeName, slots) {
 
 /** Watch: step through catchable departures without opening the list. */
 function watchNeighbours(plan, now) {
-  const list = plan.upcoming.filter((c) => c.depMs - now >= c.walk * 60000);
+  const list = plan.upcoming.filter((c) => isCatchable(c, now));
   const i = plan.hero ? list.findIndex((c) => c.id === plan.hero.id) : -1;
   return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 ? list[i + 1] || null : null, index: i, total: list.length };
 }
@@ -293,7 +294,9 @@ function renderHero(plan, now, slots) {
   // No walk set for the trip back: you're already at the stop, so no leave advice at all.
   if (advice.atStop) leave = reversed ? '' : `<div class="leave idle">You're at the stop</div>`;
   else if (advice.now)
-    leave = `<div class="leave now">🏃 Leave now<small>${walkText(c)}${advice.late ? ', hurry' : ''}</small></div>`;
+    leave = advice.run
+      ? `<div class="leave now">🏃 Run now<small>${walkText(c)}, only if you run</small></div>`
+      : `<div class="leave now">🏃 Leave now<small>${walkText(c)}</small></div>`;
   else
     leave =
       advice.minutes === 0
@@ -365,14 +368,16 @@ function renderCompare(plan, now, slots) {
 
 function renderUpcoming(plan, now) {
   const section = $('upcomingSection');
-  if (!plan.upcoming.length) {
+  // Trams you can't make even running are gone from the list; the ones you'd have to run for say "run".
+  const reachable = plan.upcoming.filter((c) => isCatchable(c, now));
+  if (!reachable.length) {
     section.hidden = true;
     return;
   }
   const wasHidden = section.hidden;
   section.hidden = false;
   const multi = routeOptions(activeRoute(), reversed).length > 1;
-  const html = upcomingRows(plan.upcoming)
+  const html = upcomingRows(reachable)
     .map((group) => {
       const c = group[0];
       const tight = c.depMs - now < c.walk * 60000;
@@ -394,7 +399,7 @@ function renderUpcoming(plan, now) {
         <span class="t">${formatClock(c.depMs)}</span>
         ${badge(c)}
         <span class="info"><span class="dir" title="${esc(c.direction)}">${esc(shortDirection(c.direction))}</span><span class="sub${group.length > 1 ? ' both' : ''}">${chip}${esc(sub)}</span></span>
-        <span class="in">${tight ? 'too tight' : `${minutesUntil(c, now)} min`}</span>
+        <span class="in">${tight ? 'run' : `${minutesUntil(c, now)} min`}</span>
       </button></li>`;
     })
     .join('');
