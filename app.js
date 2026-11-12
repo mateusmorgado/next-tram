@@ -145,7 +145,7 @@ function render() {
   const now = Date.now();
   const route = activeRoute();
   const slots = routeOptions(route, reversed).length;
-  const plan = planTrips(connections, now, { selectedId, slots });
+  const plan = planTrips(connections, now, { selectedId, slots, byArrival: reversed });
   if (selectedId && !plan.upcoming.some((c) => c.id === selectedId)) selectedId = null;
   lastPlan = plan;
 
@@ -292,7 +292,7 @@ function renderHero(plan, now, slots) {
       advice.minutes === 0
         ? `<div class="leave">🚶 Leave now<small>${c.walk} min walk</small></div>` // still on time: green, not the red hurry bar
         : `<div class="leave">🚶 Leave in ${advice.minutes} min<small>${c.walk} min walk</small></div>`;
-  const eyebrow = reversed ? `From ${esc(c.stopName)} to` : 'Go to stop';
+  const eyebrow = reversed ? `From ${esc(c.boardAt || c.stopName)} to` : 'Go to stop';
   const placeName = reversed ? c.toName : c.stopName;
   const place = esc(placeName);
   const mark = heroMark(c, placeName, slots);

@@ -42,7 +42,7 @@ export async function nextTramSpeech({ locale = 'en-US', back = false, destinati
   try {
     const now = Date.now();
     const { connections } = await fetchRoute(client, route, { reversed: back });
-    const plan = planTrips(connections, now, { slots: routeOptions(route, back).length });
+    const plan = planTrips(connections, now, { slots: routeOptions(route, back).length, byArrival: back });
     return describePlan(plan, now, { lang, reversed: back });
   } catch {
     return lang === 'de'
