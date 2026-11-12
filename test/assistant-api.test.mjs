@@ -38,6 +38,12 @@ function fakeFetch() {
   };
 }
 
+// api/alexa.js: respond() is what the Web handler runs, minus the Request/Response wrapping.
+async function alexaEndpoint() {
+  const { respond } = await import('../api/alexa.js');
+  return (o = {}) => respond({ method: 'POST', headers: {}, ...o }, o.deps);
+}
+
 function call(handler, { method = 'POST', query = {}, body, headers = {}, rawBody, deps } = {}) {
   const out = { status: 0, body: null, headers: {} };
   const res = {
@@ -76,29 +82,40 @@ test('online MCP server answers initialize, lists tools and follows the code', a
 
 test('online Alexa endpoint refuses unsigned requests', async (t) => {
   t.mock.method(globalThis, 'fetch', fakeFetch());
-  const { default: alexa } = await import('../api/alexa.js');
+  const alexa = await alexaEndpoint();
   const raw = JSON.stringify({ request: { type: 'LaunchRequest', locale: 'en-US', timestamp: new Date().toISOString() } });
-  assert.equal((await call(alexa, { rawBody: raw })).status, 400);
-  assert.equal((await call(alexa, { method: 'GET' })).status, 405);
+  assert.equal((await alexa({ rawBody: raw })).status, 400);
+  assert.equal((await alexa({ method: 'GET' })).status, 405);
+});
+
+test('online Alexa endpoint as Vercel runs it: Web Request in, Response out', async (t) => {
+  t.mock.method(globalThis, 'fetch', fakeFetch());
+  const { default: endpoint } = await import('../api/alexa.js');
+  const url = 'https://app.nexttram.morgado.tech/api/alexa';
+  const get = await endpoint.fetch(new Request(url));
+  assert.equal(get.status, 405);
+  const unsigned = await endpoint.fetch(new Request(url, { method: 'POST', body: JSON.stringify({ request: { type: 'LaunchRequest' } }) }));
+  assert.equal(unsigned.status, 400);
+  assert.equal(unsigned.headers.get('cache-control'), 'no-store');
 });
 
 test('online Alexa endpoint: a verified request with ?code= answers for that code', async (t) => {
   t.mock.method(globalThis, 'fetch', fakeFetch());
-  const { default: alexa } = await import('../api/alexa.js');
+  const alexa = await alexaEndpoint();
   const verify = async ({ rawBody }) => JSON.parse(rawBody);
   const raw = JSON.stringify({ request: { type: 'LaunchRequest', locale: 'en-US' } });
-  const out = await call(alexa, { query: { code: CODE }, rawBody: raw, deps: { verify } });
+  const out = await alexa({ query: { code: CODE }, rawBody: raw, deps: { verify } });
   assert.equal(out.status, 200);
   assert.match(out.body.response.outputSpeech.text, /Tram 7/);
 });
 
 test('"connect my stops": Alexa says a number, the app sends it, then Alexa uses that code', async (t) => {
   t.mock.method(globalThis, 'fetch', fakeFetch());
-  const { default: alexa } = await import('../api/alexa.js');
+  const alexa = await alexaEndpoint();
   const { default: link } = await import('../api/alexa-link.js');
   const verify = async ({ rawBody }) => JSON.parse(rawBody);
   const ask = (request) =>
-    call(alexa, { rawBody: JSON.stringify({ context: { System: { user: { userId: 'amzn1.ask.account.TEST' } } }, request: { locale: 'en-US', ...request } }), deps: { verify } });
+    alexa({ rawBody: JSON.stringify({ context: { System: { user: { userId: 'amzn1.ask.account.TEST' } } }, request: { locale: 'en-US', ...request } }), deps: { verify } });
 
   const linkReply = await ask({ type: 'IntentRequest', intent: { name: 'LinkIntent' } });
   const pin = linkReply.body.response.card.content.match(/(\d{3}) (\d{3})/).slice(1).join('');

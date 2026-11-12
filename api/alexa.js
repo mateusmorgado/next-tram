@@ -15,36 +15,39 @@ import { handler as alexa } from '../alexa-skill.mjs';
 import { loadFavorites, store } from './_store.js';
 import { createPairing } from './_alexa-link.js';
 
-// The signature covers the exact bytes Amazon sent, so Vercel must not parse the body first.
-export const config = { api: { bodyParser: false } };
-
-async function readRaw(req) {
-  if (typeof req.rawBody === 'string' || Buffer.isBuffer(req.rawBody)) return req.rawBody;
-  const chunks = [];
-  for await (const c of req) chunks.push(typeof c === 'string' ? Buffer.from(c) : c);
-  if (!chunks.length && (typeof req.body === 'string' || Buffer.isBuffer(req.body))) return req.body; // already read by the platform
-  return Buffer.concat(chunks);
-}
-
-export default async function handler(req, res, { verify = verifyAlexaRequest, pairing = createPairing(store) } = {}) {
-  res.setHeader('Cache-Control', 'no-store');
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Alexa sends POST requests here.' });
-  }
+/**
+ * One Alexa request → { status, body }. rawBody must be the exact bytes Amazon sent,
+ * which is why this function uses the Web handler (request.text()) below: Vercel's
+ * (req, res) handler parses JSON bodies before we can read them.
+ */
+export async function respond({ method, headers, rawBody, query = {} }, { verify = verifyAlexaRequest, pairing = createPairing(store) } = {}) {
+  if (method !== 'POST') return { status: 405, body: { error: 'Alexa sends POST requests here.' }, headers: { Allow: 'POST' } };
   let event;
   try {
-    event = await verify({ headers: req.headers, rawBody: await readRaw(req), skillIds: skillIdsFromEnv() });
+    event = await verify({ headers, rawBody, skillIds: skillIdsFromEnv() });
   } catch (e) {
-    if (!(e instanceof AlexaVerifyError)) console.error('alexa verify', e);
-    return res.status(400).json({ error: 'Request could not be verified.' });
+    console.warn('alexa: refused request:', e instanceof AlexaVerifyError ? e.message : e);
+    return { status: 400, body: { error: 'Request could not be verified.' } };
   }
-  const code = normalizeCode(req.query?.code);
+  const code = normalizeCode(query.code);
   const reply = await alexa(event, null, {
     code: isValidCode(code) ? code : undefined,
-    defaultRoute: req.query?.route,
+    defaultRoute: query.route,
     loadFavorites,
     pairing,
   });
-  return res.status(200).json(reply);
+  return { status: 200, body: reply };
 }
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const out = await respond({
+      method: request.method,
+      headers: request.headers,
+      rawBody: request.method === 'POST' ? Buffer.from(await request.arrayBuffer()) : undefined,
+      query: Object.fromEntries(url.searchParams),
+    });
+    return Response.json(out.body, { status: out.status, headers: { 'Cache-Control': 'no-store', ...(out.headers || {}) } });
+  },
+};
