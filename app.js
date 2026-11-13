@@ -1024,6 +1024,20 @@ function setupCombo(inputId, onPick) {
   let active = -1;
   let seq = 0;
 
+  // An X to empty the field in one tap (shown by CSS only while there's text).
+  const clear = document.createElement('button');
+  clear.type = 'button';
+  clear.className = 'clear-btn';
+  clear.setAttribute('aria-label', 'Clear');
+  clear.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  clear.addEventListener('pointerdown', (e) => e.preventDefault()); // keep the keyboard open
+  clear.addEventListener('click', () => {
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  });
+  input.after(clear);
+
   const close = () => {
     list.hidden = true;
     active = -1;
