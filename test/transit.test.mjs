@@ -336,6 +336,20 @@ test('trip back accepts every tram stop around a big station, and names the chan
   assert.equal(near[1].transfers, 0);
 });
 
+test('a journey that ends with a walk says where to get off and how long the walk is', () => {
+  const t = (m) => new Date(Date.UTC(2026, 10, 12, 10, m)).toISOString();
+  const data = {
+    itineraries: [
+      { endTime: t(30), legs: [{ mode: 'TRAM', from: { name: 'Hauptbahnhof' }, to: { name: 'Leipzig, Elsapark' }, startTime: t(3), endTime: t(20), routeShortName: '1', tripId: 'one' }, { mode: 'WALK', startTime: t(20), endTime: t(30) }] },
+      { endTime: t(24), legs: [{ mode: 'TRAM', from: { name: 'Hauptbahnhof' }, to: { name: 'Edlichstraße' }, startTime: t(6), endTime: t(24), routeShortName: '3', tripId: 'three' }] },
+    ],
+  };
+  const [one, three] = parseMotisPlan(data, { from: { name: 'Hauptbahnhof' } });
+  assert.equal(one.walkAfterMin, 10);
+  assert.equal(one.getOffAt, 'Elsapark');
+  assert.equal(three.walkAfterMin, undefined);
+});
+
 test('trip back picks the tram that gets you home first', () => {
   const now = Date.UTC(2026, 10, 12, 10, 0);
   const m = (x) => now + x * 60000;
