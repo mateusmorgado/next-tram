@@ -19,7 +19,7 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 - an installable **PWA** for Android phones and Wear OS watches,
 - an **MCP server** so Claude (or any MCP client) can answer "next tram",
 - an **Alexa skill** ("Alexa, ask next tram when is the next tram"),
-- a **Siri Shortcut** ("Hey Siri, Next Tram") on iPhone and Apple Watch.
+- a **Siri Shortcut** ("Hey Siri, when is the next tram") that answers out loud on iPhone and Apple Watch.
 
 All three share one module, [`lib/transit.js`](lib/transit.js).
 
@@ -100,9 +100,15 @@ One public custom skill, hosted on Vercel (`api/alexa.js`), no AWS needed. Conso
 
 ## Siri (Apple Shortcuts)
 
-1. Open **Shortcuts** on your iPhone → **+** → **Add Action** → **Open URLs**.
-2. URL: `https://app.nexttram.morgado.tech/?route=lej-hbf` (any favorite's id works; add `&back=1` for the trip back).
-3. Name the shortcut **Next Tram**. Now "Hey Siri, Next Tram" opens your route with the countdown, on the iPhone or from the Apple Watch.
+Siri reads the answer aloud through `api/say`, which returns one spoken sentence as plain text.
+
+1. Open **Shortcuts** on your iPhone → **+** → **Add Action** → **Get Contents of URL**.
+2. URL: `https://app.nexttram.morgado.tech/api/say?code=<your code>` (the app's AI → Siri screen fills in your code; add `&back=1` for the trip back, `&route=<id>` for another favorite, `&lang=de` for German).
+3. Add the action **Speak Text**, name the shortcut **When is the next tram**. Now "Hey Siri, when is the next tram" says when to leave, on the iPhone, Apple Watch and in CarPlay.
+
+## Google Assistant / Gemini
+
+Google shut down custom voice actions (Conversational Actions) in 2023, so a Google speaker can't ask NextTram anything. On an Android phone, install the PWA and say "Hey Google, open NextTram". Gemini on the web can add MCP servers as "custom apps" (US only, English, for now); `api/mcp?code=` is the link once that reaches more countries.
 
 ## Files
 

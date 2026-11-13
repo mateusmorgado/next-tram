@@ -464,7 +464,8 @@ function assistantCopies() {
     mcp: copyBox(`${APP_URL}/api/mcp?code=${code}`),
     alexaPin: `<span class="ai-copy ai-pin"><input id="alexaPin" inputmode="numeric" autocomplete="one-time-code" maxlength="2" placeholder="42" aria-label="Number Alexa said">
       <button type="button" class="btn btn-primary ai-copy-btn" data-alexa-link>Connect</button></span><span class="ai-pin-msg" id="alexaPinMsg" role="status"></span>`,
-    siri: copyBox(`${APP_URL}/?route=${encodeURIComponent(first.id)}`),
+    siri: copyBox(`${APP_URL}/api/say?code=${code}`),
+    siriBack: copyBox(`${APP_URL}/api/say?code=${code}&back=1`),
   };
 }
 
