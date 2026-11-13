@@ -190,7 +190,6 @@ html.watch .install-card { display: none; }
 .count.timer .timer-text { font-size: 0.82em; } /* smaller digits, same line box: the card keeps its height */
 .count-num { font-size: 88px; font-weight: 750; line-height: 0.95; letter-spacing: -0.04em; }
 .count-unit { font-size: 22px; font-weight: 600; color: var(--text-2); }
-.count-sec { font-size: 14px; color: var(--text-3); margin-left: 4px; }
 .times { text-align: right; font-size: 14px; color: var(--text-2); font-variant-numeric: tabular-nums; line-height: 1.6; padding-bottom: 6px; }
 .times b { color: var(--text); font-weight: 600; }
 .delay { white-space: nowrap; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 1px 6px; }
@@ -477,7 +476,6 @@ html.watch .hero-stop { font-size: 16px; }
 html.watch .hero-line { justify-content: center; margin-top: 4px; font-size: 13px; }
 html.watch .hero-count { flex-direction: column; align-items: center; gap: 0; margin-top: 0; }
 html.watch .count-num { font-size: 64px; }
-html.watch .count-sec { display: none; }
 html.watch .times { text-align: center; padding: 0; font-size: 12px; line-height: 1.3; }
 html.watch .leave { justify-content: center; padding: 6px 14px; border-radius: 999px; font-size: 14px; margin: 8px auto 0; width: fit-content; }
 html.watch .leave small, html.watch .leave .link { display: none; }
@@ -510,7 +508,6 @@ html.watch .topbar { z-index: 2; }
   html:not(.no-watch) .rt-short { display: inline; }
   html:not(.no-watch) .swap-btn { width: 30px; height: 30px; }
   html:not(.no-watch) .count-num { font-size: 56px; }
-  html:not(.no-watch) .count-sec,
   html:not(.no-watch) .times div + div { display: none; }
   html:not(.no-watch) .hero-stop { font-size: 17px; }
   html:not(.no-watch) .hero-line { margin-top: 4px; font-size: 13px; }
