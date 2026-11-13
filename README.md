@@ -66,7 +66,7 @@ The app saves your favorites online under a personal code. Tap **AI** in the app
 
 The links point at two Vercel functions that need nothing installed:
 
-- `api/mcp.js`: online MCP server (Streamable HTTP, stateless JSON). Claude: Settings → Connectors → Add custom connector. ChatGPT: Developer mode → Create. URL `https://app.nexttram.morgado.tech/api/mcp?code=<code>`.
+- `api/mcp.js`: online MCP server (Streamable HTTP, stateless JSON). Claude: Customize → Connectors → + → Add custom connector (no sign-in; "Continue anyway" if the check warns). ChatGPT: Developer mode → Create. URL `https://app.nexttram.morgado.tech/api/mcp?code=<code>`.
 - `api/alexa.js`: the public Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa`. It verifies Amazon's request signature (`lib/alexa-verify.js`). `api/alexa-link.js` links an Alexa user to a personal code ("pair" → 2-digit number → typed into the app).
 
 Storage is Upstash Redis on the Vercel project: Vercel → Storage → **Upstash for Redis** → connect it to `next-tram`. That sets `KV_REST_API_URL`/`KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`), which `api/favorites.js` reads. Whoever knows a code can read and replace that list; only stop names, coordinates and walk times are stored.
