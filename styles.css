@@ -84,6 +84,10 @@ body {
 }
 
 button { font: inherit; color: inherit; cursor: pointer; }
+/* The main screen is an app, not a page: long-press or double-tap shouldn't select its text.
+   Dialogs (guides, codes, links) stay selectable so things can still be copied. */
+.app { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.app input, .app textarea { -webkit-user-select: text; user-select: text; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 [hidden] { display: none !important; }
