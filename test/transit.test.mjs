@@ -336,20 +336,18 @@ test('trip back accepts every tram stop around a big station, and names the chan
   assert.equal(near[1].transfers, 0);
 });
 
-test('trip back drops a line that only passes near home (ride, then walk)', () => {
+test('a journey that ends with a walk says where to get off and how long the walk is', () => {
   const t = (m) => new Date(Date.UTC(2026, 10, 12, 10, m)).toISOString();
-  const hbf = { name: 'Hauptbahnhof', lat: 51.3455, lon: 12.3817 };
-  const home = { name: 'Edlichstraße', tid: 'de-DELFI_de:14713:11508', lat: 51.3447, lon: 12.4149 };
   const data = {
     itineraries: [
-      // Line 1 to a stop ~600 m away, then a walk: not a tram home.
-      { endTime: t(20), legs: [{ mode: 'TRAM', from: { name: 'Hauptbahnhof', lat: 51.3455, lon: 12.3817 }, to: { name: 'Elsapark', lat: 51.3502, lon: 12.4145 }, startTime: t(3), routeShortName: '1', tripId: 'one' }, { mode: 'WALK' }] },
-      // Line 3 to the home stop (another platform ID of the same stop).
-      { endTime: t(24), legs: [{ mode: 'TRAM', from: { name: 'Hauptbahnhof', lat: 51.3455, lon: 12.3817 }, to: { name: 'Leipzig, Edlichstr.', stopId: 'de-DELFI_de:14713:11508:2:4' }, startTime: t(6), routeShortName: '3', tripId: 'three' }] },
+      { endTime: t(30), legs: [{ mode: 'TRAM', from: { name: 'Hauptbahnhof' }, to: { name: 'Leipzig, Elsapark' }, startTime: t(3), endTime: t(20), routeShortName: '1', tripId: 'one' }, { mode: 'WALK', startTime: t(20), endTime: t(30) }] },
+      { endTime: t(24), legs: [{ mode: 'TRAM', from: { name: 'Hauptbahnhof' }, to: { name: 'Edlichstraße' }, startTime: t(6), endTime: t(24), routeShortName: '3', tripId: 'three' }] },
     ],
   };
-  assert.deepEqual(parseMotisPlan(data, { from: hbf, nearKm: 0.4 }).map((c) => c.line), ['1', '3']);
-  assert.deepEqual(parseMotisPlan(data, { from: hbf, to: home, nearKm: 0.4 }).map((c) => c.line), ['3']);
+  const [one, three] = parseMotisPlan(data, { from: { name: 'Hauptbahnhof' } });
+  assert.equal(one.walkAfterMin, 10);
+  assert.equal(one.getOffAt, 'Elsapark');
+  assert.equal(three.walkAfterMin, undefined);
 });
 
 test('trip back picks the tram that gets you home first', () => {

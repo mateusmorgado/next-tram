@@ -326,6 +326,7 @@ function renderHero(plan, now, slots) {
         <div class="times">
           <div>leaves <b>${formatClock(c.depMs)}</b> ${delay}</div>
           ${c.arrMs ? `<div>arrives <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${changeText(c)}` : ''}</div>` : ''}
+          ${c.walkAfterMin ? `<div class="walk-after">get off at ${esc(c.getOffAt || 'a nearby stop')}, then ${c.walkAfterMin} min walk</div>` : ''}
         </div>
       </div>
     </div>
@@ -390,7 +391,7 @@ function renderUpcoming(plan, now) {
               .sort((x, y) => x.arrMs - y.arrMs)
               .map((g) => `${g.toName} ${formatClock(g.arrMs)}`)
               .join(' · ')
-          : [multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '', c.arrMs ? `arr ${formatClock(c.arrMs)}` : '']
+          : [multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '', c.walkAfterMin ? `+${c.walkAfterMin} min walk` : '', c.arrMs ? `arr ${formatClock(c.arrMs)}` : '']
               .filter(Boolean)
               .join(' · ');
       const d = c.realtime ? delayLabel(c.delayMin) : null;
