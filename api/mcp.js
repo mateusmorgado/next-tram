@@ -38,12 +38,19 @@ export default async function handler(req, res) {
 
   // One line per request so a failing connector can be traced in the Vercel logs (never the code itself).
   const methods = (Array.isArray(body) ? body : [body]).map((m) => m?.method).join(',');
-  console.log(`[mcp] ${methods} code=${req.query?.code ? 'yes' : 'no'} ua=${String(req.headers?.['user-agent'] || '').slice(0, 60)}`);
+  const first = Array.isArray(body) ? body[0] : body;
+  console.log(
+    `[mcp] ${methods} code=${req.query?.code ? 'yes' : 'no'} proto=${first?.params?.protocolVersion || req.headers?.['mcp-protocol-version'] || '-'} accept=${req.headers?.accept || '-'} session=${req.headers?.['mcp-session-id'] ? 'yes' : 'no'} auth=${req.headers?.authorization ? 'yes' : 'no'} ua=${String(req.headers?.['user-agent'] || '').slice(0, 60)}`,
+  );
 
   const code = normalizeCode(req.query?.code);
   const handle = createMcpHandler({ code: isValidCode(code) ? code : undefined, defaultRoute: req.query?.route, loadFavorites });
   const batch = Array.isArray(body);
   const replies = (await Promise.all((batch ? body : [body]).map(handle))).filter(Boolean);
-  if (!replies.length) return res.status(202).end(); // only notifications
+  if (!replies.length) {
+    console.log('[mcp] -> 202');
+    return res.status(202).end(); // only notifications
+  }
+  console.log(`[mcp] -> 200 ${replies.map((r) => (r.error ? `error ${r.error.code} ${r.error.message}` : 'ok')).join(',')}`);
   return res.status(200).json(batch ? replies : replies[0]);
 }
