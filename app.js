@@ -69,7 +69,9 @@ function loadState() {
   const mark = MARKS.includes(saved.mark) ? saved.mark : 'stop';
   // Spare time is one setting for all routes; each route carries a copy so the assistants see it too.
   const buffer = BUFFER_CHOICES.includes(saved.buffer) ? saved.buffer : bufferSecs(routes[0]?.buffer);
-  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, buffer, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '', installHidden: Boolean(saved.installHidden) };
+  // Running for a tram is allowed unless turned off; like spare time, each route carries a copy.
+  const run = typeof saved.run === 'boolean' ? saved.run : routes[0]?.noRun !== true;
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, buffer, run, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '', installHidden: Boolean(saved.installHidden) };
 }
 
 function saveState() {
@@ -823,6 +825,7 @@ function syncSetupForm() {
   $('stop0Label').textContent = secondStop ? 'Stop 1' : 'Your stop';
   document.querySelectorAll('#markSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mark === state.mark)));
   document.querySelectorAll('#bufferSeg button').forEach((b) => b.setAttribute('aria-checked', String(Number(b.dataset.buffer) === state.buffer)));
+  document.querySelectorAll('#runSeg button').forEach((b) => b.setAttribute('aria-checked', String((b.dataset.run === 'yes') === state.run)));
   $('stopDest').value = draft.dest ? shortStopName(draft.dest.name) : '';
   $('routeLabel').value = draft.label || '';
   syncSteppers();
@@ -841,6 +844,20 @@ function stepWalk(key, delta) {
   if (key === 'dest') draft.destWalk = clamp(draft.destWalk);
   else if (draft.stops[Number(key)]) draft.stops[Number(key)].walk = clamp(draft.stops[Number(key)].walk);
   syncSteppers();
+}
+
+/** Run for a tram if that's the only way to make it, or never. All routes, applies right away. */
+function setRun(on) {
+  state.run = Boolean(on);
+  for (const r of state.routes) {
+    if (state.run) delete r.noRun;
+    else r.noRun = true;
+  }
+  if (draft) draft.noRun = state.run ? undefined : true;
+  connections = connections.map((c) => ({ ...c, noRun: !state.run }));
+  saveState();
+  syncSetupForm();
+  render();
 }
 
 /** Spare time on top of every walk, for all routes. Applies right away, like the card mark. */
@@ -974,6 +991,8 @@ function readDraft() {
   route.stops = route.stops.filter((s) => s.stop);
   if (state.buffer) route.buffer = state.buffer;
   else delete route.buffer;
+  if (state.run) delete route.noRun;
+  else route.noRun = true;
   return route;
 }
 
@@ -1277,6 +1296,10 @@ function wire() {
     saveState();
     syncSetupForm();
     render();
+  });
+  $('runSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-run]');
+    if (b) setRun(b.dataset.run === 'yes');
   });
   $('bufferSeg').addEventListener('click', (e) => {
     const b = e.target.closest('[data-buffer]');
