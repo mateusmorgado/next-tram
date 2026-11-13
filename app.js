@@ -322,7 +322,7 @@ function renderHero(plan, now, slots) {
           ${
             state.countdown
               ? `<span class="count-num"><span class="timer-text" data-tick="clock"></span></span><span class="count-unit" aria-hidden="true">&#8203;</span>`
-              : `<span class="count-num">${mins}</span><span class="count-unit">min</span><span class="count-sec" data-tick="clock"></span>`
+              : `<span class="count-num">${mins}</span><span class="count-unit">min</span>`
           }
         </button>
         <div class="times">
