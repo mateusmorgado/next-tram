@@ -141,6 +141,18 @@ test('running saves at most a minute, and at most half the walk', () => {
   assert.ok(!isCatchable(buffered, T0 + 1000));
 });
 
+test('"never run" setting: you need the full walk, and the setting reaches every option', () => {
+  const noRun = { ...conn(0, 1, 2), noRun: true };
+  assert.ok(!isCatchable(noRun, T0));
+  assert.ok(isCatchable({ ...conn(0, 2, 2), noRun: true }, T0));
+  assert.equal(needsRun({ ...conn(0, 2, 2), noRun: true }, T0), false);
+  const plan = planTrips([noRun, { ...conn(0, 9, 2), noRun: true }], T0);
+  assert.equal(plan.hero.id, '0:9');
+  const route = { ...DEFAULT_ROUTES[0], noRun: true };
+  assert.ok(routeOptions(route).every((o) => o.noRun === true));
+  assert.ok(routeOptions(DEFAULT_ROUTES[0]).every((o) => o.noRun === false));
+});
+
 test('a tapped tram you can no longer make is dropped', () => {
   const list = [conn(1, 4, 4), conn(1, 12, 4)];
   assert.equal(planTrips(list, T0, { selectedId: '1:4' }).hero.id, '1:4');

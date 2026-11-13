@@ -134,3 +134,18 @@ test('"connect my stops": Alexa says a number, the app sends it, then Alexa uses
   await ask({ type: 'IntentRequest', intent: { name: 'UnlinkIntent' } });
   assert.ok(![...db.keys()].some((k) => k.startsWith('alexa:user:')));
 });
+
+test('api/say answers in plain text for Siri, following the code, language and back', async (t) => {
+  t.mock.method(globalThis, 'fetch', fakeFetch());
+  const { default: say, pickLocale } = await import('../api/say.js');
+  const base = 'https://app.nexttram.morgado.tech/api/say';
+  const res = await say.fetch(new Request(`${base}?code=${CODE}`, { headers: { 'Accept-Language': 'en-GB,en;q=0.9' } }));
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type'), /^text\/plain/);
+  assert.match(await res.text(), /Tram 7/);
+  const de = await say.fetch(new Request(`${base}?code=${CODE}&lang=de&back=1`));
+  assert.match(await de.text(), /Tram 7|Bahn|Geh/);
+  assert.equal((await say.fetch(new Request(base, { method: 'POST', body: 'x' }))).status, 405);
+  assert.equal(pickLocale(undefined, 'de-DE,de;q=0.9'), 'de-DE');
+  assert.equal(pickLocale('en', 'de-DE'), 'en-US');
+});

@@ -19,7 +19,7 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 - an installable **PWA** for Android phones and Wear OS watches,
 - an **MCP server** so Claude (or any MCP client) can answer "next tram",
 - an **Alexa skill** ("Alexa, ask next tram when is the next tram"),
-- a **Siri Shortcut** ("Hey Siri, Next Tram") on iPhone and Apple Watch.
+- a **Siri Shortcut** ("Hey Siri, when is the next tram") that answers out loud on iPhone and Apple Watch.
 
 All three share one module, [`lib/transit.js`](lib/transit.js).
 
@@ -28,7 +28,7 @@ All three share one module, [`lib/transit.js`](lib/transit.js).
 - **Two home stops in parallel.** A route starts with one stop; **+ Add a second stop** adds another, each with its own walk time (default: Edlichstraße 2 min with Tram 7, Torgauer Platz 4 min with Trams 3 and 8). Both are checked at the same time and the results are merged.
 - **Time your walk.** Each stop has a **⏱ Time my walk** stopwatch: tap Start at your front door and Stop at the stop, and the exact time (say 3:42) becomes that stop's walk. Timing the real walk beats guessing. The count survives a locked phone.
 - **Spare time.** Settings → *Spare time on each walk*: none, 15 s, 30 s or 1 min on top of every walk, for all routes. The app, Alexa, Claude and ChatGPT all plan with walk + spare time.
-- **Run or missed.** Running saves you at most 1 minute of the walk (and at most half of a short walk). So with 1 min left, a 2 min walk is still a "🏃 Run now", but a 3 min walk is a missed tram. Missed trams disappear from the countdown, the list and the voice answer, even one you tapped. Trams you'd have to run for say "run" in the list, and assistants say "Run now for …". A 1 min spare time means you never have to run.
+- **Run or missed.** Running saves you at most 1 minute of the walk (and at most half of a short walk). So with 1 min left, a 2 min walk is still a "🏃 Run now", but a 3 min walk is a missed tram. Missed trams disappear from the countdown, the list and the voice answer, even one you tapped. Trams you'd have to run for say "run" in the list, and assistants say "Run now for …". Settings → *Run for a tram*: "If it's the only way" (default) or "Never", which only shows trams you make walking, in the app and in the voice answers.
 - **Punctuality as words.** early (yellow), on time, late (1–3 min), +late (4–7), ++late (8+). Tap a label for the explanation.
 - **Leave advice.** "🚶 Leave in 4 min" while you have time, "🏃 Leave now" once departure ≤ walk time, "🏃 Run now" when only running gets you there.
 - **Tap to track.** Tap any upcoming departure or stop card to lock the countdown onto that tram until it leaves or you can't make it any more. "Back to fastest" returns to automatic mode.
@@ -100,9 +100,15 @@ One public custom skill, hosted on Vercel (`api/alexa.js`), no AWS needed. Conso
 
 ## Siri (Apple Shortcuts)
 
-1. Open **Shortcuts** on your iPhone → **+** → **Add Action** → **Open URLs**.
-2. URL: `https://app.nexttram.morgado.tech/?route=lej-hbf` (any favorite's id works; add `&back=1` for the trip back).
-3. Name the shortcut **Next Tram**. Now "Hey Siri, Next Tram" opens your route with the countdown, on the iPhone or from the Apple Watch.
+Siri reads the answer aloud through `api/say`, which returns one spoken sentence as plain text.
+
+1. Open **Shortcuts** on your iPhone → **+** → **Add Action** → **Get Contents of URL**.
+2. URL: `https://app.nexttram.morgado.tech/api/say?code=<your code>` (the app's AI → Siri screen fills in your code; add `&back=1` for the trip back, `&route=<id>` for another favorite, `&lang=de` for German).
+3. Add the action **Speak Text**, name the shortcut **When is the next tram**. Now "Hey Siri, when is the next tram" says when to leave, on the iPhone, Apple Watch and in CarPlay.
+
+## Google Assistant / Gemini
+
+Google shut down custom voice actions (Conversational Actions) in 2023, so a Google speaker can't ask NextTram anything. On an Android phone, install the PWA and say "Hey Google, open NextTram". Gemini on the web can add MCP servers as "custom apps" (US only, English, for now); `api/mcp?code=` is the link once that reaches more countries.
 
 ## Files
 

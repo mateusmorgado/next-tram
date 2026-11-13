@@ -27,6 +27,8 @@ test('sanitizeRoutes keeps route fields only and drops broken routes', () => {
   const timed = sanitizeRoutes([{ ...DEFAULT_ROUTES[0], buffer: 30, stops: [{ stop: { name: 'A' }, walk: 222 / 60 }] }]);
   assert.equal(Math.round(timed[0].stops[0].walk * 60), 222);
   assert.equal(timed[0].buffer, 30);
+  assert.equal(timed[0].noRun, undefined);
+  assert.equal(sanitizeRoutes([{ ...DEFAULT_ROUTES[0], noRun: true }])[0].noRun, true);
   assert.deepEqual(sanitizeRoutes(DEFAULT_ROUTES).map((r) => r.id), DEFAULT_ROUTES.map((r) => r.id));
 });
 
