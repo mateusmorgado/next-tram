@@ -13,6 +13,7 @@ import { isValidCode, normalizeCode } from '../lib/favorites-sync.js';
 import { verifyAlexaRequest, skillIdsFromEnv, AlexaVerifyError } from '../lib/alexa-verify.js';
 import { handler as alexa } from '../alexa-skill.mjs';
 import { loadFavorites, store } from './_store.js';
+import { countCall } from '../lib/call-stats.js';
 import { createPairing } from './_alexa-link.js';
 
 /**
@@ -48,6 +49,7 @@ export default {
       rawBody: request.method === 'POST' ? Buffer.from(await request.arrayBuffer()) : undefined,
       query: Object.fromEntries(url.searchParams),
     });
+    if (out.status === 200) await countCall(store, 'alexa');
     return Response.json(out.body, { status: out.status, headers: { 'Cache-Control': 'no-store', ...(out.headers || {}) } });
   },
 };

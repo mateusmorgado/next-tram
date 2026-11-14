@@ -7,7 +7,8 @@
  */
 import { isValidCode, normalizeCode } from '../lib/favorites-sync.js';
 import { createMcpHandler } from '../lib/mcp-tools.js';
-import { loadFavorites } from './_store.js';
+import { loadFavorites, store } from './_store.js';
+import { countCall } from '../lib/call-stats.js';
 
 function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -43,6 +44,7 @@ export default async function handler(req, res) {
     `[mcp] ${methods} code=${req.query?.code ? 'yes' : 'no'} proto=${first?.params?.protocolVersion || req.headers?.['mcp-protocol-version'] || '-'} accept=${req.headers?.accept || '-'} session=${req.headers?.['mcp-session-id'] ? 'yes' : 'no'} auth=${req.headers?.authorization ? 'yes' : 'no'} ua=${String(req.headers?.['user-agent'] || '').slice(0, 60)}`,
   );
 
+  if (/tools\/call/.test(methods)) await countCall(store, 'mcp');
   const code = normalizeCode(req.query?.code);
   const handle = createMcpHandler({ code: isValidCode(code) ? code : undefined, defaultRoute: req.query?.route, loadFavorites });
   const batch = Array.isArray(body);

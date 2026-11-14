@@ -11,7 +11,8 @@
  */
 import { isValidCode, normalizeCode } from '../lib/favorites-sync.js';
 import { nextTramSpeech } from '../alexa-skill.mjs';
-import { loadFavorites } from './_store.js';
+import { loadFavorites, store } from './_store.js';
+import { countCall } from '../lib/call-stats.js';
 
 /** 'de' or 'en' from ?lang= or the Accept-Language header (iPhones send their own language). */
 export function pickLocale(lang, acceptLanguage) {
@@ -36,6 +37,7 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     const out = await respond({ method: request.method, query: Object.fromEntries(url.searchParams), headers: request.headers });
+    if (out.status === 200 && request.method === 'GET') await countCall(store, 'say');
     return new Response(request.method === 'HEAD' ? null : out.text, {
       status: out.status,
       headers: {
