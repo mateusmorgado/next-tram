@@ -18,7 +18,7 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 
 - an installable **PWA** for Android phones and Wear OS watches,
 - an **MCP server** so Claude (or any MCP client) can answer "next tram",
-- an **Alexa skill** ("Alexa, ask next tram when is the next tram"),
+- an **Alexa skill**, [live in the Alexa Skills Store](https://www.amazon.de/dp/B0HQ7KN3S1/) ("Alexa, ask next tram when is the next tram"),
 - a **Siri Shortcut** ("Hey Siri, when is the next tram") that answers out loud on iPhone and Apple Watch.
 
 All three share one module, [`lib/transit.js`](lib/transit.js).
@@ -90,6 +90,8 @@ The tools live in `lib/mcp-tools.js`; `mcp-server.mjs` serves them over stdio:
 Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom `from`/`from2`/`to`, `language: "de"`), `search_stops`, `list_routes`. Set `NEXT_TRAM_ROUTE=ber-strassmann` to change the default.
 
 ## Alexa skill
+
+**Enable it:** <https://www.amazon.de/dp/B0HQ7KN3S1/> (or in the Alexa app: Skills & Games → search "NextTram").
 
 One public custom skill, hosted on Vercel (`api/alexa.js`), no AWS needed. Console setup, store listing texts and certification: **[docs/alexa-skill.md](docs/alexa-skill.md)**. Privacy policy: `privacy.html`.
 
