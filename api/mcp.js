@@ -1,6 +1,6 @@
 /**
  * Online MCP server (Streamable HTTP, stateless, JSON replies), so Claude and ChatGPT can add
- * NextTram as a connector with just a link:  https://app.nexttram.morgado.tech/api/mcp?code=<code>
+ * NextTram as a connector with just a link:  https://app.nexttram.morgado.tech/api/mcp/<code>
  *
  * The code from the app's AI screen makes the answers follow the user's own favorites;
  * without one it uses the built-in routes. No sign-in: the code is the only key.
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Mcp-Session-Id, Mcp-Protocol-Version, Authorization');
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') console.log(`[mcp] ${req.method} accept=${req.headers?.accept || ''}`);
+  if (req.method !== 'POST') console.log(`[mcp] ${req.method} accept=${req.headers?.accept || ''} ua=${String(req.headers?.['user-agent'] || '').slice(0, 60)}`);
   if (req.method !== 'POST') {
     // No server-to-client stream: everything is answered in the POST reply.
     res.setHeader('Allow', 'POST, OPTIONS');

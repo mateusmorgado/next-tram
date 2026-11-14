@@ -75,6 +75,10 @@
   ],
   "rewrites": [
     {
+      "source": "/.well-known/:path(oauth-.*)",
+      "destination": "/api/well-known?path=:path"
+    },
+    {
       "source": "/api/mcp/:code",
       "destination": "/api/mcp?code=:code"
     }
