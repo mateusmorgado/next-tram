@@ -461,7 +461,7 @@ function assistantCopies() {
   const first = state.routes[0];
   const code = state.syncCode;
   return {
-    mcp: copyBox(`${APP_URL}/api/mcp?code=${code}`),
+    mcp: copyBox(`${APP_URL}/api/mcp/${code}`),
     alexaPin: `<span class="ai-copy ai-pin"><input id="alexaPin" inputmode="numeric" autocomplete="one-time-code" maxlength="2" placeholder="42" aria-label="Number Alexa said">
       <button type="button" class="btn btn-primary ai-copy-btn" data-alexa-link>Connect</button></span><span class="ai-pin-msg" id="alexaPinMsg" role="status"></span>`,
     siri: copyBox(`${APP_URL}/api/say?code=${code}`),
