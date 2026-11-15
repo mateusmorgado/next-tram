@@ -68,3 +68,11 @@ test('"open next tram" gives the pairing number until this Alexa is paired, then
   const paired = await launch();
   assert.match(paired.response.outputSpeech.text, /could not get live departures/);
 });
+
+test('Alexa answers in Brazilian Portuguese for pt-BR', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: false, status: 502, json: async () => ({}) }));
+  const res = await handler({ request: { type: 'IntentRequest', locale: 'pt-BR', intent: { name: 'NextTramIntent', slots: {} } } }, null, {});
+  assert.match(res.response.outputSpeech.text, /não consegui buscar/);
+  const help = await handler({ request: { type: 'IntentRequest', locale: 'pt-BR', intent: { name: 'AMAZON.HelpIntent', slots: {} } } }, null, {});
+  assert.match(help.response.outputSpeech.text, /próximo bonde/);
+});
