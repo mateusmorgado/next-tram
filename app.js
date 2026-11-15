@@ -538,7 +538,7 @@ function showAssistantGuide(key, index = 0) {
         ? `<button type="submit" class="btn btn-primary ai-next" value="ok">Done</button>`
         : `<button type="button" class="btn btn-primary ai-next" data-step-go="${i + 1}">Next</button>`}
     </div>`;
-  $('aiBody').dataset.assistant = a.key;
+  $('aiBody').dataset.guide = a.key;
   $('aiBody').closest('dialog').scrollTop = 0;
   $('aiBody').querySelector('.ai-next')?.focus({ preventScroll: true });
 }
@@ -1240,7 +1240,7 @@ function wire() {
     const t = e.target.closest('.term, [data-copy], [data-copy-file], [data-assistant], [data-assistant-back], [data-alexa-link], [data-step-go]');
     if (!t) return;
     if (t.classList.contains('term')) toggleTerm(t);
-    else if (t.dataset.stepGo) showAssistantGuide($('aiBody').dataset.assistant, Number(t.dataset.stepGo));
+    else if (t.dataset.stepGo) showAssistantGuide($('aiBody').dataset.guide, Number(t.dataset.stepGo));
     else if (t.hasAttribute('data-alexa-link')) linkAlexa();
     else if (t.dataset.assistant) showAssistantGuide(t.dataset.assistant);
     else if (t.hasAttribute('data-assistant-back')) showAssistantPicker();
