@@ -3,8 +3,8 @@
  *
  * "Alexa, ask next tram when is the next tram."
  * "Alexa, frag next tram wann kommt die nächste Bahn."
- * "Alexa, ask next tram to pair." → a 2-digit number to type into the app,
- * after which Alexa answers for that user's first favorite.
+ * "Alexa, open next tram." → before pairing: a 2-digit number to type into the app,
+ * after which Alexa answers for that user's first favorite. ("Alexa, ask next tram to pair" works too.)
  *
  * The public skill runs on Vercel: https://app.nexttram.morgado.tech/api/alexa (api/alexa.js
  * verifies Amazon's signature and runs this same handler). See docs/alexa-skill.md.
@@ -82,6 +82,10 @@ const TEXT = {
       card: `Your NextTram number: ${pin}\nOpen the NextTram app → AI → Alexa and type it in. It works for 5 minutes.`,
     }),
     forgotten: 'Done. I forgot your stops and use the built-in ones again.',
+    welcome: (pin) => ({
+      ssml: `Welcome to NextTram. To use your own stops, your number is <say-as interpret-as="cardinal">${pin}</say-as>. <break time="400ms"/> Open the NextTram app, tap A.I., then Alexa, and type it in. <break time="400ms"/> Once more: <say-as interpret-as="cardinal">${pin}</say-as>. It works for five minutes. After that, just say: Alexa, open next tram.`,
+      card: `Your NextTram number: ${pin}\nOpen the NextTram app → AI → Alexa and type it in. It works for 5 minutes.\nAfter that, just say: “Alexa, open next tram”.`,
+    }),
   },
   de: {
     help: 'Frag: wann kommt die nächste Bahn? Oder: wann komme ich nach Hause? Für die Haltestellen aus deiner NextTram App frag nach dem Code.',
@@ -95,6 +99,10 @@ const TEXT = {
       card: `Dein NextTram Code: ${pin}\nÖffne die NextTram App → AI → Alexa und gib ihn dort ein. Er gilt 5 Minuten.`,
     }),
     forgotten: 'Erledigt. Ich habe deine Haltestellen vergessen und nehme wieder die eingebauten.',
+    welcome: (pin) => ({
+      ssml: `Willkommen bei NextTram. Für deine eigenen Haltestellen ist dein Code <say-as interpret-as="cardinal">${pin}</say-as>. <break time="400ms"/> Öffne die NextTram App, tippe auf A.I., dann auf Alexa, und gib ihn dort ein. <break time="400ms"/> Noch einmal: <say-as interpret-as="cardinal">${pin}</say-as>. Er gilt fünf Minuten. Danach sag einfach: Alexa, öffne next tram.`,
+      card: `Dein NextTram Code: ${pin}\nÖffne die NextTram App → AI → Alexa und gib ihn dort ein. Er gilt 5 Minuten.\nDanach sag einfach: „Alexa, öffne next tram“.`,
+    }),
   },
 };
 
@@ -115,12 +123,30 @@ export async function handler(event, _context, options = envOptions()) {
 
   if (req.type === 'SessionEndedRequest' || req.type === 'System.ExceptionEncountered') return { version: '1.0', response: {} };
 
+  // undefined = not looked up yet, null = this Alexa user is not paired (or the lookup failed)
+  let linked;
+  const linkedCode = async () => {
+    if (linked === undefined) linked = options.code || (pairing && userId ? await pairing.lookup(userId).catch(() => null) : null);
+    return linked;
+  };
   const answer = async (extra = {}) => {
-    const code = options.code || (pairing && userId ? await pairing.lookup(userId).catch(() => null) : null);
+    const code = await linkedCode();
     return speak(await nextTramSpeech({ locale, ...extra }, { ...options, code: code || undefined }));
   };
 
-  if (req.type === 'LaunchRequest') return answer();
+  // "Alexa, open next tram". Not paired yet → the pairing number right away, so nobody has to find
+  // the exact pairing phrase (Alexa often sent "ask next tram to pair" to its own transit feature).
+  // Paired → the next tram.
+  if (req.type === 'LaunchRequest') {
+    if (pairing && userId && !(await linkedCode())) {
+      const pin = await pairing.start(userId).catch(() => null);
+      if (pin) {
+        const { ssml, card } = t.welcome(pin);
+        return speak(card, { ssml, card });
+      }
+    }
+    return answer();
+  }
 
   if (req.type === 'IntentRequest') {
     const name = req.intent?.name;
