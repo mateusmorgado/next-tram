@@ -3,7 +3,7 @@
 One public skill for everyone, hosted on the NextTram Vercel app. No AWS account or Lambda needed.
 
 - Endpoint: `https://app.nexttram.morgado.tech/api/alexa` (checks Amazon's request signature, as certification requires)
-- Voice models: `alexa/interaction-model.en-US.json`, `en-GB.json` (same), `de-DE.json`
+- Voice models: `alexa/interaction-model.en-US.json`, `en-GB.json` (same), `de-DE.json`, `pt-BR.json` (Alexa answers in Brazilian Portuguese)
 - Privacy policy: `https://app.nexttram.morgado.tech/privacy.html`
 - Support email: `nextTram@morgado.tech`
 - Icons: `docs/alexa/icon-108.png`, `docs/alexa/icon-512.png`

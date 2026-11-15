@@ -1,0 +1,144 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "next tram",
+      "intents": [
+        {
+          "name": "NextTramIntent",
+          "slots": [
+            {
+              "name": "destination",
+              "type": "DESTINATION"
+            }
+          ],
+          "samples": [
+            "quando sai o próximo bonde",
+            "quando passa o próximo bonde",
+            "quando chega o próximo bonde",
+            "quando sai o meu bonde",
+            "próximo bonde",
+            "próximo tram",
+            "quando sai o próximo tram",
+            "quando eu preciso sair",
+            "quando tenho que sair",
+            "que horas eu saio",
+            "quando sai o próximo ônibus",
+            "quando passa o próximo ônibus",
+            "próximo bonde para {destination}",
+            "quando sai o próximo bonde para {destination}",
+            "quando passa o próximo bonde para {destination}"
+          ]
+        },
+        {
+          "name": "TripBackIntent",
+          "slots": [
+            {
+              "name": "destination",
+              "type": "DESTINATION"
+            }
+          ],
+          "samples": [
+            "próximo bonde para casa",
+            "quando sai o próximo bonde para casa",
+            "quando sai o bonde de volta",
+            "volta para casa",
+            "como eu volto para casa",
+            "como eu volto de {destination}",
+            "quando sai o próximo bonde de volta de {destination}"
+          ]
+        },
+        {
+          "name": "LinkIntent",
+          "samples": [
+            "parear",
+            "parear minhas paradas",
+            "parear o app",
+            "conectar",
+            "conectar minhas paradas",
+            "conectar o app",
+            "vincular",
+            "vincular o app",
+            "código",
+            "um código",
+            "o código",
+            "meu código",
+            "um novo código",
+            "novo código",
+            "número",
+            "um número",
+            "meu número",
+            "um novo número",
+            "me dá um código",
+            "me dá o código",
+            "me dá meu número",
+            "usar minhas paradas",
+            "usar meus favoritos",
+            "configurar"
+          ]
+        },
+        {
+          "name": "UnlinkIntent",
+          "samples": [
+            "esquecer minhas paradas",
+            "esqueça minhas paradas",
+            "desconectar minhas paradas",
+            "desconectar o app",
+            "desvincular o app"
+          ]
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        }
+      ],
+      "types": [
+        {
+          "name": "DESTINATION",
+          "values": [
+            {
+              "id": "lej-hbf",
+              "name": {
+                "value": "Hbf",
+                "synonyms": [
+                  "Hauptbahnhof",
+                  "estação central",
+                  "estação principal",
+                  "main station"
+                ]
+              }
+            },
+            {
+              "id": "ber-strassmann",
+              "name": {
+                "value": "Straßmannstr.",
+                "synonyms": [
+                  "Strassmann",
+                  "Straßmannstraße",
+                  "Rua Strassmann",
+                  "Berlim",
+                  "Berlin"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

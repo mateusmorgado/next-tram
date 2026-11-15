@@ -7,17 +7,17 @@
  * Any other tool that can fetch a URL and read it aloud works the same way.
  *
  * Query: code (follow the user's favorites), route (a route id or name, default: first favorite),
- *        back=1 (the trip back home), lang=de|en (default: the caller's Accept-Language).
+ *        back=1 (the trip back home), lang=de|en|pt (default: the caller's Accept-Language).
  */
 import { isValidCode, normalizeCode } from '../lib/favorites-sync.js';
 import { nextTramSpeech } from '../alexa-skill.mjs';
 import { loadFavorites, store } from './_store.js';
 import { countCall } from '../lib/call-stats.js';
 
-/** 'de' or 'en' from ?lang= or the Accept-Language header (iPhones send their own language). */
+/** 'de', 'pt' or 'en' from ?lang= or the Accept-Language header (iPhones send their own language). */
 export function pickLocale(lang, acceptLanguage) {
   const wanted = String(lang || acceptLanguage || '').trim().toLowerCase();
-  return wanted.startsWith('de') ? 'de-DE' : 'en-US';
+  return wanted.startsWith('de') ? 'de-DE' : wanted.startsWith('pt') ? 'pt-BR' : 'en-US';
 }
 
 const isYes = (v) => ['1', 'true', 'yes', 'ja'].includes(String(v || '').toLowerCase());

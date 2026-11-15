@@ -11,7 +11,7 @@
  *
  * Or deploy it yourself: zip `alexa-skill.mjs` together with the `lib/` folder, upload it to a Lambda
  * function, and set the handler to `alexa-skill.handler`. The voice model is in
- * alexa/interaction-model.en-US.json and alexa/interaction-model.de-DE.json.
+ * alexa/interaction-model.*.json (en-US, en-GB, de-DE, pt-BR).
  *
  * Optional env:
  *   NEXT_TRAM_CODE=<code from the app's AI screen>  answer for the user's own first favorite
@@ -36,8 +36,20 @@ async function pickRoute(slotValue, { code, defaultRoute, loadFavorites = (c) =>
   );
 }
 
+/** 'de', 'pt' or 'en' from an Alexa locale such as de-DE, pt-BR or en-GB. */
+export const langOf = (locale) => {
+  const l = String(locale || '').toLowerCase();
+  return l.startsWith('de') ? 'de' : l.startsWith('pt') ? 'pt' : 'en';
+};
+
+const SORRY = {
+  en: 'Sorry, I could not get live departures right now.',
+  de: 'Entschuldigung, ich konnte die Abfahrtszeiten gerade nicht abrufen.',
+  pt: 'Desculpe, não consegui buscar os horários agora.',
+};
+
 export async function nextTramSpeech({ locale = 'en-US', back = false, destination } = {}, options = envOptions()) {
-  const lang = String(locale).startsWith('de') ? 'de' : 'en';
+  const lang = langOf(locale);
   const route = await pickRoute(destination, options);
   try {
     const now = Date.now();
@@ -45,9 +57,7 @@ export async function nextTramSpeech({ locale = 'en-US', back = false, destinati
     const plan = planTrips(connections, now, { slots: routeOptions(route, back).length, byArrival: back });
     return describePlan(plan, now, { lang, reversed: back });
   } catch {
-    return lang === 'de'
-      ? 'Entschuldigung, ich konnte die Abfahrtszeiten gerade nicht abrufen.'
-      : 'Sorry, I could not get live departures right now.';
+    return SORRY[lang];
   }
 }
 
@@ -104,6 +114,23 @@ const TEXT = {
       card: `Dein NextTram Code: ${pin}\nÖffne die NextTram App → AI → Alexa und gib ihn dort ein. Er gilt 5 Minuten.\nDanach sag einfach: „Alexa, öffne next tram“.`,
     }),
   },
+  pt: {
+    help: 'Pergunte: quando sai o próximo bonde? Ou: quando sai o próximo bonde para casa? Para usar as paradas do seu app NextTram, diga: código.',
+    helpReprompt: 'O que você quer saber?',
+    fallback: 'Desculpe, eu só sei dizer o próximo bonde. Tente: quando sai o próximo bonde?',
+    bye: 'Tchau!',
+    noLink: 'Conectar suas paradas não está disponível nesta skill.',
+    linkFailed: 'Desculpe, não consegui criar um número agora. Tente de novo em um minuto.',
+    link: (pin) => ({
+      ssml: `Seu número é <say-as interpret-as="cardinal">${pin}</say-as>. <break time="400ms"/> Abra o app NextTram, toque em A.I., depois em Alexa, e digite o número. <break time="400ms"/> Mais uma vez: <say-as interpret-as="cardinal">${pin}</say-as>. Ele vale por cinco minutos.`,
+      card: `Seu número NextTram: ${pin}\nAbra o app NextTram → AI → Alexa e digite o número. Ele vale por 5 minutos.`,
+    }),
+    forgotten: 'Pronto. Esqueci suas paradas e voltei a usar as paradas de exemplo.',
+    welcome: (pin) => ({
+      ssml: `Bem-vindo ao NextTram. Para usar suas próprias paradas, seu número é <say-as interpret-as="cardinal">${pin}</say-as>. <break time="400ms"/> Abra o app NextTram, toque em A.I., depois em Alexa, e digite o número. <break time="400ms"/> Mais uma vez: <say-as interpret-as="cardinal">${pin}</say-as>. Ele vale por cinco minutos. Depois disso, é só dizer: Alexa, abrir next tram.`,
+      card: `Seu número NextTram: ${pin}\nAbra o app NextTram → AI → Alexa e digite o número. Ele vale por 5 minutos.\nDepois disso, é só dizer: “Alexa, abrir next tram”.`,
+    }),
+  },
 };
 
 /**
@@ -116,8 +143,7 @@ const TEXT = {
 export async function handler(event, _context, options = envOptions()) {
   const req = event?.request || {};
   const locale = req.locale || 'en-US';
-  const lang = locale.startsWith('de') ? 'de' : 'en';
-  const t = TEXT[lang];
+  const t = TEXT[langOf(locale)];
   const { pairing } = options;
   const userId = userIdOf(event);
 
