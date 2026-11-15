@@ -238,10 +238,50 @@ html.watch .install-card { display: none; }
 .ai-note { padding: 12px 14px; border-radius: 14px; background: var(--surface-2); font-size: 16px; line-height: 1.5; color: var(--text-2); }
 .ai-note b { color: var(--text); }
 .ai-note code { letter-spacing: 0.06em; font-size: 15px; padding: 2px 6px; border-radius: 6px; background: var(--surface); color: var(--text); white-space: nowrap; }
-.ai-back { justify-self: start; padding: 4px 0; font-size: 15px; }
-.ai-back svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.ai-guide-head { display: flex; align-items: center; gap: 14px; }
-.ai-time { font-size: 14px; color: var(--text-3); }
+.ai-pop form { position: relative; }
+.ai-close { position: absolute; top: -10px; right: -8px; z-index: 1; }
+.ai-close svg, .ai-back svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ai-pop > form > #aiBody { display: grid; gap: 16px; min-width: 0; }
+.ai-pop > form > #aiBody > .ai-title { padding-right: 36px; }
+.ai-guide-head { display: flex; align-items: center; gap: 10px; padding-right: 40px; margin: -8px 0 0 -10px; }
+.ai-guide-head .ai-logo { width: 32px; height: 32px; border-radius: 9px; }
+.ai-guide-name { font-size: 17px; }
+.ai-progress { display: flex; gap: 6px; }
+.ai-progress span { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2); }
+.ai-progress .done { background: color-mix(in srgb, var(--go) 45%, var(--surface-2)); }
+.ai-progress .now { background: var(--go); }
+.ai-step { display: grid; gap: 10px; min-width: 0; animation: step-in 0.18s ease-out; }
+@keyframes step-in { from { opacity: 0; transform: translateX(12px); } }
+@media (prefers-reduced-motion: reduce) { .ai-step { animation: none; } }
+.ai-art { display: grid; place-items: center; padding: 14px 0 10px; border-radius: 16px; background: var(--surface-2); margin-bottom: 6px; }
+.ai-art .art { width: min(240px, 80%); height: auto; display: block; }
+.art .s { fill: var(--line); }
+.art .c { fill: var(--surface); }
+.art .l { stroke: var(--text-3); stroke-width: 2; fill-opacity: 1; }
+.art path.l { fill: none; }
+.art .g, .art .gfill { fill: var(--go); }
+.art .gs { stroke: var(--go); stroke-width: 2.5; stroke-linecap: round; }
+.art path.gs { fill: none; }
+.art .t { fill: var(--text-2); }
+.art .ring { fill: color-mix(in srgb, var(--go) 22%, transparent); }
+.art .plus, .art .tick { stroke: var(--surface); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.art .star { fill: var(--go); }
+.art .num { font: 700 22px/1 var(--font); fill: var(--text); text-anchor: middle; }
+.ai-step-no { font-size: 13px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-3); }
+.ai-text { margin: 0; font-size: 17px; line-height: 1.55; color: var(--text-2); overflow-wrap: anywhere; }
+.ai-text b { color: var(--text); }
+.ai-action { min-width: 0; }
+.ai-action .ai-copy { margin-top: 0; }
+.ai-go { display: flex; align-items: center; justify-content: center; text-decoration: none; }
+.ai-go::after { content: '↗'; margin-left: 8px; }
+.ai-needs { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text-3); }
+.ai-tip { border-radius: 12px; background: var(--surface-2); font-size: 15px; line-height: 1.5; color: var(--text-2); }
+.ai-tip summary { cursor: pointer; padding: 10px 14px; font-weight: 650; color: var(--text); list-style-position: inside; }
+.ai-tip > div { padding: 0 14px 12px; overflow-wrap: anywhere; }
+.ai-tip b { color: var(--text); }
+.ai-nav { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 4px; }
+.ai-nav .btn { height: 48px; font-size: 16px; justify-self: stretch; }
+.ai-nav .ai-prev { background: var(--surface-2); color: var(--text); }
 .ai-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; gap: 18px; }
 .ai-steps li { counter-increment: step; position: relative; padding-left: 44px; min-width: 0; font-size: 17px; line-height: 1.55; color: var(--text); }
 .ai-steps li::before {

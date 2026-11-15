@@ -1,6 +1,7 @@
 import { CITIES, DEFAULT_ROUTES, DEFAULT_MODE_FILTER, DEFAULTS_VERSION, RETIRED_DEFAULTS } from './lib/stops.js';
 import { newCode, isValidCode, formatCode, pushRoutes, APP_URL } from './lib/favorites-sync.js';
 import { ASSISTANTS, TERMS } from './lib/assistant-guides.js';
+import { art } from './lib/guide-art.js';
 import {
   createTransitClient,
   fetchRoute,
@@ -469,12 +470,18 @@ function assistantCopies() {
   };
 }
 
-/** Fills [[term:key|words]] and [[copy:key]] in guide text. */
+const firstName = () => {
+  const first = state.routes[0];
+  return first?.label || first?.dest?.name || 'your first favorite';
+};
+
+/** Fills [[term:key|words]], [[copy:key]] and [[first]] in guide text. */
 function fillGuide(html, copies) {
   return html
     .replace(/\[\[term:(\w+)\|([^\]]+)\]\]/g, (_, k, words) =>
       `<button type="button" class="term" data-term="${k}" aria-expanded="false">${words}<span class="term-i" aria-hidden="true">i</span></button>`)
-    .replace(/\[\[copy:(\w+)\]\]/g, (_, k) => copies[k] || '');
+    .replace(/\[\[copy:(\w+)\]\]/g, (_, k) => copies[k] || '')
+    .replace(/\[\[first\]\]/g, `<b>${esc(firstName())}</b>`);
 }
 
 function openAssistants() {
@@ -484,45 +491,66 @@ function openAssistants() {
 }
 
 function showAssistantPicker() {
-  const first = state.routes[0];
-  const firstName = first.label || first.dest?.name || 'your first favorite';
   $('aiBody').innerHTML = `
     <h2 id="aiInfoTitle" class="ai-title">Add NextTram to your assistant</h2>
-    <p class="ai-lead">Then just ask <b>“when is the next tram”</b> and it tells you when to leave. Tap your assistant:</p>
+    <p class="ai-lead">Then just ask <b>“when is the next tram”</b>. Pick your assistant:</p>
     <ul class="ai-grid">${ASSISTANTS.map(
       (a) => `<li><button type="button" class="ai-tile" data-assistant="${a.key}">${logo(a.key)}<b>${esc(a.name)}</b><span>${esc(a.where)}</span></button></li>`,
     ).join('')}</ul>
-    <div class="ai-note">${fillGuide(
-      `Your assistant answers for your [[term:first|first favorite]]: <b>${esc(firstName)}</b>.`,
-      {},
-    )}<div class="explain" hidden></div></div>
-    <div class="ai-note ai-code-note">${fillGuide(`Your [[term:code|personal code]]: <code>${esc(formatCode(state.syncCode))}</code>`, {})}<div class="explain" hidden></div></div>`;
+    <div class="ai-note">${fillGuide(`It answers for your [[term:first|first favorite]]: [[first]].`, {})}<div class="explain" hidden></div></div>`;
 }
 
-function showAssistantGuide(key) {
+/**
+ * One step of an assistant's guide, as a wizard screen: picture, title, one or two sentences,
+ * at most one thing to tap or type, an optional folded tip, and Back / Next.
+ */
+function showAssistantGuide(key, index = 0) {
   const a = ASSISTANTS.find((x) => x.key === key);
   if (!a) return showAssistantPicker();
+  const total = a.steps.length;
+  const i = Math.max(0, Math.min(index, total - 1));
+  const st = a.steps[i];
   const copies = assistantCopies();
+  const last = i === total - 1;
   $('aiBody').innerHTML = `
-    <button type="button" class="text-btn ai-back" data-assistant-back>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>All assistants
-    </button>
-    <div class="ai-guide-head">${logo(a.key)}<div><h2 id="aiInfoTitle" class="ai-title">Add to ${esc(a.name)}</h2><span class="ai-time">${esc(a.time)}</span></div></div>
-    <div class="ai-note">${fillGuide(`<b>You need:</b> ${a.needs}`, copies)}<div class="explain" hidden></div></div>
-    <ol class="ai-steps">${a.steps
-      .map((st) => `<li><div class="step-text">${fillGuide(st, copies)}</div><div class="explain" hidden></div></li>`)
-      .join('')}</ol>
-    <div class="ai-try"><span>Now try it</span><b>“${esc(a.tryIt)}”</b></div>`;
+    <div class="ai-guide-head">
+      <button type="button" class="icon-btn ai-back" data-assistant-back aria-label="All assistants">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      ${logo(a.key)}<b class="ai-guide-name">${esc(a.name)}</b>
+    </div>
+    <div class="ai-progress" role="progressbar" aria-valuemin="1" aria-valuemax="${total}" aria-valuenow="${i + 1}" aria-label="Step ${i + 1} of ${total}">
+      ${a.steps.map((_, n) => `<span class="${n < i ? 'done' : n === i ? 'now' : ''}"></span>`).join('')}
+    </div>
+    <div class="ai-step" data-step="${i}">
+      <div class="ai-art">${art(st.art)}</div>
+      <span class="ai-step-no">Step ${i + 1} of ${total}</span>
+      <h2 id="aiInfoTitle" class="ai-title">${esc(st.title)}</h2>
+      <p class="ai-text">${fillGuide(st.text, copies)}</p>
+      <div class="explain" hidden></div>
+      ${st.action ? `<div class="ai-action">${fillGuide(st.action, copies)}</div>` : ''}
+      ${i === 0 && a.needs ? `<p class="ai-needs">You need: ${esc(a.needs)} · ${esc(a.time)}</p>` : ''}
+      ${st.tip ? `<details class="ai-tip"><summary>${esc(st.tipLabel || 'Not working?')}</summary><div>${fillGuide(st.tip, copies)}<div class="explain" hidden></div></div></details>` : ''}
+    </div>
+    <div class="ai-nav">
+      ${i > 0 ? `<button type="button" class="btn ai-prev" data-step-go="${i - 1}">Back</button>` : '<span></span>'}
+      ${last
+        ? `<button type="submit" class="btn btn-primary ai-next" value="ok">Done</button>`
+        : `<button type="button" class="btn btn-primary ai-next" data-step-go="${i + 1}">Next</button>`}
+    </div>`;
+  $('aiBody').dataset.assistant = a.key;
   $('aiBody').closest('dialog').scrollTop = 0;
+  $('aiBody').querySelector('.ai-next')?.focus({ preventScroll: true });
 }
 
-/** Shows or hides a word's explanation right under the step it is in. */
+/** Shows or hides a word's explanation right under the step (or tip) it is in. */
 function toggleTerm(btn) {
-  const box = btn.closest('li, .ai-note')?.querySelector(':scope > .explain');
+  const scope = btn.closest('.ai-tip > div, li, .ai-note, .ai-step');
+  const box = scope?.querySelector(':scope > .explain');
   if (!box) return;
   const t = TERMS[btn.dataset.term];
   const open = btn.getAttribute('aria-expanded') === 'true';
-  box.closest('li, .ai-note').querySelectorAll('.term').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  scope.querySelectorAll('.term').forEach((b) => b.setAttribute('aria-expanded', 'false'));
   if (open || !t) {
     box.hidden = true;
     return;
@@ -1209,13 +1237,21 @@ function wire() {
   $('themeBtn').addEventListener('click', toggleTheme);
   $('aiBtn').addEventListener('click', openAssistants);
   $('aiInfo').addEventListener('click', (e) => {
-    const t = e.target.closest('.term, [data-copy], [data-copy-file], [data-assistant], [data-assistant-back], [data-alexa-link]');
+    const t = e.target.closest('.term, [data-copy], [data-copy-file], [data-assistant], [data-assistant-back], [data-alexa-link], [data-step-go]');
     if (!t) return;
     if (t.classList.contains('term')) toggleTerm(t);
+    else if (t.dataset.stepGo) showAssistantGuide($('aiBody').dataset.assistant, Number(t.dataset.stepGo));
     else if (t.hasAttribute('data-alexa-link')) linkAlexa();
     else if (t.dataset.assistant) showAssistantGuide(t.dataset.assistant);
     else if (t.hasAttribute('data-assistant-back')) showAssistantPicker();
     else copyFromButton(t);
+  });
+  $('aiInfo').addEventListener('keydown', (e) => {
+    // Enter in the number box connects instead of closing the dialog.
+    if (e.key === 'Enter' && e.target.id === 'alexaPin') {
+      e.preventDefault();
+      linkAlexa();
+    }
   });
   $('watchBtn').addEventListener('click', () => {
     state.watch = !state.watch;

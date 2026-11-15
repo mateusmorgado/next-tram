@@ -15,7 +15,7 @@ What people say:
 | Open | “Alexa, open next tram” | “Alexa, öffne next tram” |
 | Ask | “Alexa, ask next tram when is the next tram” | “Alexa, frag next tram wann kommt die nächste Bahn” |
 | Way back | “Alexa, ask next tram when is the next tram home” | “Alexa, frag next tram wann komme ich nach Hause” |
-| Use own stops | “Alexa, ask next tram to pair” | “Alexa, frag next tram nach dem Code” |
+| Use own stops | “Alexa, open next tram” (until paired it says the number) · “Alexa, ask next tram for a new code” | “Alexa, öffne next tram” · “Alexa, frag next tram nach einem neuen Code” |
 | Forget them | “Alexa, ask next tram to forget my stops” | “Alexa, sag next tram vergiss meine Haltestellen” |
 
 Without connecting, the skill answers for the built-in first route (Leipzig Hbf). “Connect my stops” makes Alexa say a 2-digit number; typing it in the app (AI → Alexa) links that Alexa user to the app's favorites, and Alexa then answers for the first favorite. Alexa can't be triggered by “Alexa, when is the next tram” without the skill name, except through an Alexa routine (explained in the app's Alexa guide).
@@ -52,7 +52,7 @@ The endpoint needs the merged code on `main` (production), and “pair” needs 
 1. Top tab **Test** → switch **Off** to **Development**.
 2. Type or say: `open next tram` → you hear the next tram.
 3. `ask next tram when is the next tram home`, `help`, `stop` should all answer.
-4. `ask next tram to pair` → note the number, open the app → AI → Alexa → type it → **Connect**. Ask again; it now uses your first favorite.
+4. `open next tram` (a new test user is not paired yet) → note the number, open the app → AI → Alexa → type it → **Connect**. Ask again; it now uses your first favorite.
 5. Your own Echo devices (same Amazon account) can use the skill while it's in development, no publishing needed.
 
 ## 5. Second language
@@ -67,7 +67,7 @@ Tab **Distribution**, per language:
 |---|---|---|
 | Public name | NextTram | NextTram |
 | One sentence | Hear when your next tram or bus leaves, and when to walk out the door. | Hör, wann deine nächste Bahn oder dein Bus fährt und wann du losgehen musst. |
-| Detailed | Next Tram tells you when to leave for your tram or bus in Leipzig and Berlin, with live delays. Just ask “when is the next tram”. It answers for your first favorite in the free NextTram app (app.nexttram.morgado.tech): say “pair” and type the number Alexa tells you into the app. Without connecting, it uses Leipzig main station. | Nächste Tram sagt dir, wann du zu deiner Straßenbahn oder deinem Bus in Leipzig und Berlin losgehen musst, mit Live-Verspätungen. Frag einfach „wann kommt die nächste Bahn“. Die Antwort gilt für deinen ersten Favoriten in der kostenlosen NextTram App (app.nexttram.morgado.tech): frag „nach dem Code“ und gib die Zahl, die Alexa nennt, in der App ein. Ohne Verbindung nimmt sie den Leipziger Hauptbahnhof. |
+| Detailed | Next Tram tells you when to leave for your tram or bus in Leipzig and Berlin, with live delays. Just ask “when is the next tram”. It answers for your first favorite in the free NextTram app (app.nexttram.morgado.tech): say “open next tram” and type the number Alexa tells you into the app. Before that, ask “when is the next tram” for Leipzig main station. | Nächste Tram sagt dir, wann du zu deiner Straßenbahn oder deinem Bus in Leipzig und Berlin losgehen musst, mit Live-Verspätungen. Frag einfach „wann kommt die nächste Bahn“. Die Antwort gilt für deinen ersten Favoriten in der kostenlosen NextTram App (app.nexttram.morgado.tech): sag „öffne next tram“ und gib die Zahl, die Alexa nennt, in der App ein. Vorher antwortet „wann kommt die nächste Bahn“ für den Leipziger Hauptbahnhof. |
 | What's new | First release. | Erste Version. |
 | Example phrases | Alexa, open next tram · Alexa, ask next tram when is the next tram · Alexa, ask next tram to pair | Alexa, öffne next tram · Alexa, frag next tram wann kommt die nächste Bahn · Alexa, frag next tram nach dem Code |
 | Small / large icon | `docs/alexa/icon-108.png` / `docs/alexa/icon-512.png` | same |
@@ -78,10 +78,19 @@ Tab **Distribution**, per language:
 
 **Privacy & Compliance:** Does it allow purchases? No. Collects personal information? No. Directed to children under 13? No. Contains advertising? No. Tick the export compliance box. Testing instructions:
 
-> No account or setup is needed. “open next tram” answers for a built-in route (Leipzig main station) with live departures. “pair” is optional: it says a one-time 2-digit number that the user types into the free NextTram web app (https://app.nexttram.morgado.tech → AI → Alexa) to use their own saved stops; “forget my stops” removes the link.
+> No account or setup is needed. “ask next tram when is the next tram” answers for a built-in route (Leipzig main station) with live departures. “open next tram” on an Alexa that is not paired yet says a one-time 2-digit number that the user types into the free NextTram web app (https://app.nexttram.morgado.tech → AI → Alexa) to use their own saved stops; “forget my stops” removes the link.
 
 **Availability:** Public. Countries: Germany is enough (the stops are Leipzig and Berlin), or all countries.
 
 ## 7. Certification
 
 Tab **Certification** → **Validation** (fix anything red) → **Functional test** → **Submission** → **Submit for review**. Amazon usually answers within a few days by email. Once live, people find it in the Alexa app under Skills & Games → “Next Tram”.
+
+## Pairing: when Alexa answers something else
+
+If “Alexa, ask next tram to pair” gets a reply like “I can’t get your exact location” or “I’m not quite sure how to help”, the request never reached NextTram (the `nexttram-alexa` count at `/api/stats` stays the same). Alexa then sends “next tram” to its own transit feature. Usual causes:
+
+- The skill is not enabled on that Amazon account (Alexa app → More → Skills & Games → Your Skills).
+- The Alexa language has no live NextTram version, or that language’s version is not available in the account’s country. Check the console: Distribution → Availability, and that the language (for example English (US) on an amazon.de account) passed certification.
+
+Since November 2026 the plain launch phrase pairs: “Alexa, open next tram” says the number while that Alexa is not paired yet (code only, no re-certification needed). The voice models also gained more pairing phrases (“for a code”, “for a new code”, “my number”, …); those are interaction-model changes, so they go live only after **Build Model** and **Submit for review** for each language.

@@ -48,3 +48,23 @@ test('"connect my stops" without online storage says it is not available', async
   const res = await handler({ request: { type: 'IntentRequest', locale: 'en-US', intent: { name: 'LinkIntent' } } }, null, {});
   assert.match(res.response.outputSpeech.text, /not available/);
 });
+
+test('"open next tram" gives the pairing number until this Alexa is paired, then the next tram', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => ({ ok: false, status: 502, json: async () => ({}) }));
+  const links = new Map();
+  const pairing = {
+    lookup: async (id) => links.get(id) || null,
+    start: async () => '42',
+    forget: async (id) => links.delete(id),
+  };
+  const launch = (locale = 'en-US') =>
+    handler({ request: { type: 'LaunchRequest', locale }, session: { user: { userId: 'amzn1.ask.account.X' } } }, null, { pairing, loadFavorites: async () => null });
+  const first = await launch();
+  assert.equal(first.response.outputSpeech.type, 'SSML');
+  assert.match(first.response.outputSpeech.ssml, /your number is <say-as interpret-as="cardinal">42/);
+  assert.match(first.response.card.content, /Your NextTram number: 42/);
+  assert.match((await launch('de-DE')).response.outputSpeech.ssml, /dein Code <say-as interpret-as="cardinal">42/);
+  links.set('amzn1.ask.account.X', 'ABCD2345');
+  const paired = await launch();
+  assert.match(paired.response.outputSpeech.text, /could not get live departures/);
+});
