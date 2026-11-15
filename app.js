@@ -491,6 +491,7 @@ function openAssistants() {
 }
 
 function showAssistantPicker() {
+  $('aiBody').classList.remove('wizard');
   $('aiBody').innerHTML = `
     <h2 id="aiInfoTitle" class="ai-title">Add NextTram to your assistant</h2>
     <p class="ai-lead">Then just ask <b>“when is the next tram”</b>. Pick your assistant:</p>
@@ -539,7 +540,8 @@ function showAssistantGuide(key, index = 0) {
         : `<button type="button" class="btn btn-primary ai-next" data-step-go="${i + 1}">Next</button>`}
     </div>`;
   $('aiBody').dataset.guide = a.key;
-  $('aiBody').closest('dialog').scrollTop = 0;
+  $('aiBody').classList.add('wizard');
+  $('aiBody').querySelector('.ai-step').scrollTop = 0;
   $('aiBody').querySelector('.ai-next')?.focus({ preventScroll: true });
 }
 
