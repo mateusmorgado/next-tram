@@ -142,6 +142,8 @@ html.desktop-mode .intro { width: calc(100vw / var(--z, 1)); height: calc(100dvh
 }
 .in-label.time { background: var(--focus); color: var(--bg); font-variant-numeric: tabular-nums; }
 .in-label.time.done { background: var(--go); }
+.in-label.time.maps { background: var(--now); color: #fff; }
+.in-label.door { font-size: 11px; padding: 2px 8px; background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--text-2); }
 .in-label.line { background: var(--tram); color: #fff; border-radius: 7px; font-weight: 750; padding: 2px 8px; }
 .m-plate { fill: var(--in-plate); }
 .m-park { fill: var(--in-park); }
@@ -149,8 +151,10 @@ html.desktop-mode .intro { width: calc(100vw / var(--z, 1)); height: calc(100dvh
 .m-glow { stroke: var(--go); stroke-width: 2.4; opacity: 0.14; }
 .m-rail { stroke: var(--go); stroke-width: 0.2; }
 .m-platform { fill: var(--text-3); }
-.m-street, .m-short { fill: none; stroke-width: 0.5; stroke-linecap: round; stroke-dasharray: 0.01 1; }
-.m-street { stroke: var(--text-3); }
+.m-street, .m-short { fill: none; stroke-width: 0.5; stroke-linecap: round; stroke-linejoin: round; }
+.m-short { stroke-dasharray: 0.01 1; }
+.m-street { stroke: var(--now); opacity: 0.85; }
+.m-door { font: 650 1.1px system-ui, Arial, sans-serif; fill: var(--text-2); text-anchor: middle; }
 .m-short { stroke: var(--focus); }
 .m-homering { fill: color-mix(in srgb, var(--focus) 22%, transparent); stroke: var(--focus); stroke-width: 0.1; }
 .m-home { fill: var(--focus); }
