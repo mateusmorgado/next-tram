@@ -21,11 +21,11 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 - an **Alexa skill**, [live in the Alexa Skills Store](https://www.amazon.de/dp/B0HQ7KN3S1/) ("Alexa, ask next tram when is the next tram"),
 - a **Siri Shortcut** ("Hey Siri, when is the next tram") that answers out loud on iPhone and Apple Watch.
 
-All three share one module, [`lib/transit.js`](lib/transit.js).
+The app, the MCP server and the voice endpoints share one TypeScript module, [`src/transit/`](src/transit/).
 
 ## Languages
 
-The app speaks **English, Deutsch and Português (Brasil)**. It starts in the browser's language; the footer switches it and remembers the choice. All text lives in `lib/i18n/{en,de,pt}.js` (`npm test` checks that the three have the same keys). The phrases people are told to say (`voice.*`) are real utterances of the Alexa models in `alexa/`, and a test checks that. To add a language, copy `en.js`, translate it, and register it in `lib/i18n.js`.
+The app speaks **English, Deutsch and Português (Brasil)**. It starts in the browser's language; the footer switches it and remembers the choice. All text lives in `src/i18n/{en,de,pt}.ts` (`npm test` checks that the three have the same keys). The phrases people are told to say (`voice.*`) are real utterances of the Alexa models in `alexa/`, and a test checks that. To add a language, copy `en.js`, translate it, and register it in `src/i18n/index.ts`.
 
 ## How it decides
 
@@ -42,20 +42,22 @@ The app speaks **English, Deutsch and Português (Brasil)**. It starts in the br
 
 ## Run the app
 
-Needs Node 18+ only for the tiny dev server (the app itself is plain HTML/CSS/JS, no build step):
+Written in TypeScript (strict). Needs Node 22.18+, which runs `.ts` files directly; the browser app is bundled with esbuild into `dist/`:
 
 ```bash
-npm start          # http://localhost:8080
+npm start          # builds, then serves http://localhost:8080
+npm run typecheck  # tsc, strict
 npm test           # unit tests for the transit logic and the Alexa handler
+npm run build      # dist/ (what Vercel deploys)
 ```
 
-To install it on Android it must be served over HTTPS. It is deployed on **Vercel**: every push to `main` goes live, and every pull request gets its own preview URL. `vercel.json` serves it as plain static files (no build) and keeps the service worker and manifest uncached so updates show up right away; `.vercelignore` leaves the MCP server, Alexa skill, tests and docs out of the deployment. Open the URL in Chrome → menu → **Install app**. Long-press the home-screen icon for shortcuts straight to a route (`?route=lej-hbf`, `?route=lej-hbf&back=1`).
+To install it on Android it must be served over HTTPS. It is deployed on **Vercel**: every push to `main` goes live, and every pull request gets its own preview URL. `vercel.json` runs `npm run build`, serves `dist/` and the `api/` functions, and keeps the service worker and manifest uncached so updates show up right away; `.vercelignore` leaves the MCP server, Alexa skill, tests and docs out of the deployment. Open the URL in Chrome → menu → **Install app**. Long-press the home-screen icon for shortcuts straight to a route (`?route=lej-hbf`, `?route=lej-hbf&back=1`).
 
 **Watch:** on screens 380 px wide or less (Wear OS browsers) the app switches to a round, glanceable layout automatically. Tap the route name to cycle favorites, tap the countdown to refresh. The ⌚ button previews it on a phone or desktop.
 
 ## Favorites
 
-Three routes are built in (see [`lib/stops.js`](lib/stops.js)):
+Three routes are built in (see [`src/data/stops.ts`](src/data/stops.ts)):
 
 | id | route |
 |---|---|
@@ -71,13 +73,13 @@ The app saves your favorites online under a personal code. Tap **AI** in the app
 The links point at two Vercel functions that need nothing installed:
 
 - `api/mcp.js`: online MCP server (Streamable HTTP, stateless JSON). Claude: Customize → Connectors → + → Add custom connector (no sign-in; "Continue anyway" if the check warns). ChatGPT: Developer mode → Create. URL `https://app.nexttram.morgado.tech/api/mcp/<code>`.
-- `api/alexa.js`: the public Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa`. It verifies Amazon's request signature (`lib/alexa-verify.js`). `api/alexa-link.js` links an Alexa user to a personal code ("pair" → 2-digit number → typed into the app).
+- `api/alexa.ts`: the public Alexa skill's HTTPS endpoint, `https://app.nexttram.morgado.tech/api/alexa`. It verifies Amazon's request signature (`src/server/alexa-verify.ts`). `api/alexa-link.ts` links an Alexa user to a personal code ("pair" → 2-digit number → typed into the app).
 
 Storage is Upstash Redis on the Vercel project: Vercel → Storage → **Upstash for Redis** → connect it to `next-tram`. That sets `KV_REST_API_URL`/`KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`), which `api/favorites.js` reads. Whoever knows a code can read and replace that list; only stop names, coordinates and walk times are stored.
 
 ## MCP server on your own computer (optional)
 
-The tools live in `lib/mcp-tools.js`; `mcp-server.mjs` serves them over stdio:
+The tools live in `src/assistants/mcp-tools.ts`; `mcp-server.mjs` serves them over stdio:
 
 ```json
 {
@@ -97,12 +99,11 @@ Tools: `get_next_tram` (no arguments needed; optional `route`, `back`, a custom 
 
 **Enable it:** <https://www.amazon.de/dp/B0HQ7KN3S1/> (or in the Alexa app: Skills & Games → search "NextTram").
 
-One public custom skill, hosted on Vercel (`api/alexa.js`), no AWS needed. Console setup, store listing texts and certification: **[docs/alexa-skill.md](docs/alexa-skill.md)**. Privacy policy: `privacy.html`.
+One public custom skill, hosted on Vercel (`api/alexa.ts`), no AWS needed. Console setup, store listing texts and certification: **[docs/alexa-skill.md](docs/alexa-skill.md)**. Privacy policy: `public/privacy.html`.
 
 - "Alexa, ask next tram when is the next tram" / "Alexa, frag next tram wann kommt die nächste Bahn". "…home" uses the trip back.
 - "Alexa, open next tram": until this Alexa is paired, it says a 2-digit number; type it in the app (AI → Alexa) and Alexa follows your first favorite. After that, "open next tram" answers with the next tram. "…for a new code" pairs again, "…forget my stops" undoes it.
 - Optional env `ALEXA_SKILL_ID` (comma-separated) makes the endpoint accept only your skill.
-- Self-hosting on AWS Lambda still works: zip `alexa-skill.mjs` with `lib/`, handler `alexa-skill.handler`, optional `NEXT_TRAM_CODE`.
 
 ## Siri (Apple Shortcuts)
 
@@ -118,14 +119,19 @@ Google shut down custom voice actions (Conversational Actions) in 2023, so a Goo
 
 ## Files
 
-| File | What it is |
+| Folder / file | What it is |
 |---|---|
-| `index.html`, `styles.css`, `app.js` | The PWA (UI, state, countdown) |
-| `lib/transit.js` | API clients, stop matching, walk-buffer planning, spoken summary |
-| `lib/stops.js` | Cities, stops, default routes |
-| `sw.js`, `manifest.webmanifest`, `icons/` | Offline shell and install metadata |
-| `mcp-server.mjs`, `lib/mcp-tools.js`, `api/mcp.js` | MCP tools, local stdio server and online server |
-| `lib/assistant-guides.js`, `icons/assistants/` | The in-app "Add to your assistant" guides and logos |
-| `alexa-skill.mjs`, `alexa/`, `api/alexa*.js`, `lib/alexa-verify.js`, `docs/alexa-skill.md` | Alexa handler, voice models, signed endpoint, pairing, publishing guide |
-| `privacy.html` | Privacy policy (app, assistants, Alexa skill) |
+| `src/app/` | The PWA: `main.ts` starts it; `screens/` (hero, compare, upcoming, intro, assistants), `setup/` (route editor), `components/`, `wiring/` (event handlers), `store.ts` (saved state) |
+| `src/transit/` | API clients and parsers (`parse/`), stop matching, walk-buffer planning and catch rule, spoken summary. Shared by the app, MCP and Alexa |
+| `src/data/` | Cities, stops, default routes, line colors |
+| `src/i18n/` | English, German and Portuguese text |
+| `src/assistants/` | MCP tools and the Alexa skill handler |
+| `src/server/` | Pieces for the online endpoints: Alexa signature check, pairing, storage, local stdio MCP server |
+| `src/sync/` | Favorites online under your code; call counts |
+| `api/` | Vercel functions: MCP, Alexa, Siri (`say`), favorites |
+| `public/` | `index.html`, CSS, service worker, manifest, icons, privacy policy: copied into `dist/` |
+| `scripts/` | `build.ts` (esbuild bundle and offline file list) and `serve.ts` (local server) |
+| `mcp-server.mjs` | Starts the local MCP server over stdio |
+| `alexa/`, `docs/alexa-skill.md` | Alexa voice models and the publishing guide |
+| `public/privacy.html` | Privacy policy (app, assistants, Alexa skill) |
 | `test/` | `node --test` suites |
