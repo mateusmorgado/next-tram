@@ -41,4 +41,6 @@ android {
 
 dependencies {
     implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.0'
+    // androidbrowserhelper pulls an alpha of androidx.browser that needs a newer toolchain; pin the stable one.
+    implementation('androidx.browser:browser') { version { strictly '1.8.0' } }
 }
