@@ -381,7 +381,7 @@ html.watch .install-card { display: none; }
 
 /* ── Upcoming ── */
 .section-title { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin: 6px 4px 8px; }
-.section-title span { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+.section-title span:not(.st-main) { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
 .trip-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
 .trip-list li + li { border-top: 1px solid var(--line); }
 .trip {
@@ -407,6 +407,11 @@ html.watch .install-card { display: none; }
 .promo-link.ext::after { content: ' ↗'; }
 .promo-link:hover { color: var(--text-2); }
 html.watch .foot-links { display: none; }
+.lang-switch { align-self: center; display: flex; gap: 2px; margin-top: -4px; }
+.lang-btn { padding: 6px 9px; border: 0; background: none; font: inherit; font-size: 13px; color: var(--text-3); border-radius: 8px; }
+.lang-btn:hover { color: var(--text-2); }
+.lang-btn[aria-pressed="true"] { color: var(--text); font-weight: 650; }
+html.watch .lang-switch { display: none; }
 .text-btn { border: 0; background: none; display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-weight: 600; font-size: 14px; padding: 8px 4px; }
 .text-btn svg { width: 18px; height: 18px; }
 .loading #refreshBtn svg { animation: spin 0.9s linear infinite; }
@@ -495,6 +500,7 @@ html.watch .foot-links { display: none; }
   html:not(.no-watch) .upcoming,
   html:not(.no-watch) .statusbar,
   html:not(.no-watch) .foot-links,
+  html:not(.no-watch) .lang-switch,
   html:not(.no-watch) #errorNotice { display: none !important; }
 }
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>NextTram</title>
-  <meta name="description" content="When can I actually catch the next tram? Live departures for Leipzig and Berlin." />
+  <meta name="description" content="When can I actually catch the next tram? Live departures for Leipzig and Berlin." data-i18n-attr="content:meta.description" />
   <meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#101114" media="(prefers-color-scheme: dark)" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -51,36 +51,36 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="icon-btn ai-btn" id="aiBtn" type="button" aria-label="Add NextTram to your assistant" title="Add to your assistant">AI</button>
-        <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme" title="Theme">
+        <button class="icon-btn ai-btn" id="aiBtn" type="button" aria-label="Add NextTram to your assistant" title="Add to your assistant" data-i18n-attr="aria-label:header.ai;title:header.aiTitle">AI</button>
+        <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark theme" title="Theme" data-i18n-attr="aria-label:header.theme;title:header.themeTitle">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>
         </button>
-        <button class="icon-btn" id="watchBtn" type="button" aria-label="Watch view" aria-pressed="false" title="Watch view">
+        <button class="icon-btn" id="watchBtn" type="button" aria-label="Watch view" aria-pressed="false" title="Watch view" data-i18n-attr="aria-label:header.watch;title:header.watch">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M9 6.5 9.6 3h4.8l.6 3.5M9 17.5l.6 3.5h4.8l.6-3.5M12 9.5V12l1.5 1.5"/></svg>
         </button>
-        <button class="icon-btn" id="setupBtn" type="button" aria-label="Edit stops" title="Edit stops">
+        <button class="icon-btn" id="setupBtn" type="button" aria-label="Edit stops" title="Edit stops" data-i18n-attr="aria-label:header.setup;title:header.setup">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
         </button>
       </div>
     </header>
 
-    <aside class="install-card" id="installCard" aria-label="Install NextTram" hidden>
+    <aside class="install-card" id="installCard" aria-label="Install NextTram" data-i18n-attr="aria-label:install.label" hidden>
       <img class="install-icon" src="icons/icon.svg" alt="" width="40" height="40" />
       <div class="install-text">
-        <strong>Install NextTram</strong>
-        <span id="installHint">Opens like an app, straight from your home screen.</span>
+        <strong data-i18n="install.title">Install NextTram</strong>
+        <span id="installHint" data-i18n="install.hint">Opens like an app, straight from your home screen.</span>
       </div>
-      <button class="btn btn-primary install-go" id="installGo" type="button">Install</button>
-      <button class="install-x" id="installX" type="button" aria-label="Hide install card" title="Hide">
+      <button class="btn btn-primary install-go" id="installGo" type="button" data-i18n="install.go">Install</button>
+      <button class="install-x" id="installX" type="button" aria-label="Hide install card" title="Hide" data-i18n-attr="aria-label:install.hide;title:install.hideTitle">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </aside>
 
-    <nav class="favs" id="favBar" aria-label="Favorite routes"></nav>
+    <nav class="favs" id="favBar" aria-label="Favorite routes" data-i18n-attr="aria-label:favs.label"></nav>
 
-    <section class="route" aria-label="Current route">
+    <section class="route" aria-label="Current route" data-i18n-attr="aria-label:route.current">
       <div class="route-text" id="routeText"></div>
-      <button class="swap-btn" id="swapBtn" type="button" aria-label="Swap direction for the trip back" title="Trip back">
+      <button class="swap-btn" id="swapBtn" type="button" aria-label="Swap direction for the trip back" title="Trip back" data-i18n-attr="aria-label:route.swap;title:route.swapTitle">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v15M3.5 7.5 7 4l3.5 3.5M17 20V5M13.5 16.5 17 20l3.5-3.5"/></svg>
       </button>
     </section>
@@ -89,7 +89,7 @@
 
     <main>
       <div class="hero-wrap">
-      <button class="watch-nav prev" id="prevBtn" type="button" aria-label="Earlier tram" hidden>
+      <button class="watch-nav prev" id="prevBtn" type="button" aria-label="Earlier tram" data-i18n-attr="aria-label:hero.prev" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
       </button>
       <article class="hero" id="hero" aria-live="polite">
@@ -99,45 +99,47 @@
           <div class="sk sk-line short"></div>
         </div>
       </article>
-      <button class="watch-nav next" id="nextBtn" type="button" aria-label="Next tram" hidden>
+      <button class="watch-nav next" id="nextBtn" type="button" aria-label="Next tram" data-i18n-attr="aria-label:hero.next" hidden>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
       </button>
       <span class="watch-pos" id="watchPos" aria-hidden="true"></span>
       </div>
 
-      <section class="compare" id="compare" hidden aria-label="Compare your stops"></section>
+      <section class="compare" id="compare" hidden aria-label="Compare your stops" data-i18n-attr="aria-label:compare.label"></section>
 
       <section class="upcoming" id="upcomingSection" hidden>
-        <h2 class="section-title">Upcoming <span>tap one to track it</span></h2>
+        <h2 class="section-title"><span class="st-main" data-i18n="upcoming.title">Upcoming</span> <span data-i18n="upcoming.hint">tap one to track it</span></h2>
         <ol class="trip-list" id="tripList"></ol>
       </section>
     </main>
 
     <footer class="statusbar">
-      <span id="statusText">Loading…</span>
+      <span id="statusText"></span>
       <button class="text-btn" id="refreshBtn" type="button">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>
-        Refresh
+        <span data-i18n="status.refresh">Refresh</span>
       </button>
     </footer>
     <div class="foot-links">
-      <button class="promo-link" id="introBtn" type="button">How it works</button>
-      <a class="promo-link ext" href="https://nexttram.morgado.tech" target="_blank" rel="noopener">About NextTram</a>
+      <button class="promo-link" id="introBtn" type="button" data-i18n="footer.how">How it works</button>
+      <a class="promo-link ext" href="https://nexttram.morgado.tech" target="_blank" rel="noopener" data-i18n="footer.about">About NextTram</a>
+    </div>
+    <div class="lang-switch" id="langSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
     </div>
   </div>
 
   <dialog class="info-pop" id="delayInfo" aria-labelledby="delayInfoTitle">
     <form method="dialog">
-      <h2 id="delayInfoTitle">How punctual is it?</h2>
-      <p class="hint">Live data compared with the timetable.</p>
+      <h2 id="delayInfoTitle" data-i18n="delay.title">How punctual is it?</h2>
+      <p class="hint" data-i18n="delay.hint">Live data compared with the timetable.</p>
       <ul class="delay-info" id="delayInfoList"></ul>
-      <button class="btn btn-primary" value="ok" type="submit">Got it</button>
+      <button class="btn btn-primary" value="ok" type="submit" data-i18n="delay.gotIt">Got it</button>
     </form>
   </dialog>
 
   <dialog class="info-pop ai-pop" id="aiInfo" aria-labelledby="aiInfoTitle">
     <form method="dialog">
-      <button class="icon-btn ai-close" value="close" type="submit" aria-label="Close">
+      <button class="icon-btn ai-close" value="close" type="submit" aria-label="Close" data-i18n-attr="aria-label:ai.close">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
       <div id="aiBody"></div>
@@ -146,14 +148,14 @@
 
   <dialog class="info-pop stopwatch" id="walkTimer" aria-labelledby="walkTimerTitle">
     <form method="dialog">
-      <h2 id="walkTimerTitle">Time your walk</h2>
+      <h2 id="walkTimerTitle" data-i18n="timer.title">Time your walk</h2>
       <p class="hint" id="walkTimerTo"></p>
-      <p class="sw-tip">For the best result, use the stopwatch on a real walk: tap <b>Start</b> as you step out of your front door and <b>Stop</b> when you reach the stop. Walk at your normal pace. You can lock your phone on the way.</p>
+      <p class="sw-tip" data-i18n-html="timer.tip">For the best result, use the stopwatch on a real walk: tap <b>Start</b> as you step out of your front door and <b>Stop</b> when you reach the stop. Walk at your normal pace. You can lock your phone on the way.</p>
       <div class="sw-time" id="swTime" role="timer" aria-live="off">0:00</div>
       <div class="sw-actions">
-        <button type="button" class="btn btn-ghost" id="swCancel">Cancel</button>
+        <button type="button" class="btn btn-ghost" id="swCancel" data-i18n="timer.cancel">Cancel</button>
         <span class="spacer"></span>
-        <button type="button" class="btn btn-ghost" id="swAgain" hidden>Again</button>
+        <button type="button" class="btn btn-ghost" id="swAgain" data-i18n="timer.again" hidden>Again</button>
         <button type="button" class="btn btn-primary" id="swMain">Start</button>
       </div>
     </form>
@@ -162,134 +164,134 @@
   <dialog class="sheet" id="setupSheet" aria-labelledby="setupTitle">
     <form method="dialog" class="sheet-body" id="setupForm" autocomplete="off">
       <div class="sheet-head">
-        <h2 id="setupTitle">Your stops</h2>
-        <button class="icon-btn" value="cancel" type="submit" aria-label="Close" formnovalidate>
+        <h2 id="setupTitle" data-i18n="setup.title">Your stops</h2>
+        <button class="icon-btn" value="cancel" type="submit" aria-label="Close" data-i18n-attr="aria-label:setup.close" formnovalidate>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
       </div>
 
       <div class="field">
-        <span class="field-label">City</span>
-        <div class="segmented" id="citySeg" role="radiogroup" aria-label="City">
+        <span class="field-label" data-i18n="setup.city">City</span>
+        <div class="segmented" id="citySeg" role="radiogroup" aria-label="City" data-i18n-attr="aria-label:setup.city">
           <button type="button" role="radio" data-city="leipzig">Leipzig</button>
           <button type="button" role="radio" data-city="berlin">Berlin</button>
         </div>
       </div>
 
       <div class="field stop-field" data-slot="0">
-        <label class="field-label" for="stop0"><span class="no-pad" id="stop0Label">Your stop</span> <span>and your walk to it</span></label>
+        <label class="field-label" for="stop0"><span class="no-pad" id="stop0Label" data-i18n="setup.yourStop">Your stop</span> <span data-i18n="setup.andWalk">and your walk to it</span></label>
         <div class="stop-row">
           <div class="combo">
-            <input id="stop0" class="input" type="search" placeholder="e.g. Edlichstraße" required />
+            <input id="stop0" class="input" type="search" placeholder="e.g. Edlichstraße" data-i18n-attr="placeholder:setup.stopPh" required />
             <ul class="suggestions" role="listbox" hidden></ul>
           </div>
           <div class="stepper" data-walk="0">
-            <button type="button" data-step="-1" aria-label="Less walking time">−</button>
+            <button type="button" data-step="-1" aria-label="Less walking time" data-i18n-attr="aria-label:setup.lessWalk">−</button>
             <output>2 min</output>
-            <button type="button" data-step="1" aria-label="More walking time">+</button>
+            <button type="button" data-step="1" aria-label="More walking time" data-i18n-attr="aria-label:setup.moreWalk">+</button>
           </div>
         </div>
-        <button type="button" class="text-btn time-walk" data-time="0">⏱ Time my walk</button>
+        <button type="button" class="text-btn time-walk" data-time="0" data-i18n="setup.timeWalk">⏱ Time my walk</button>
       </div>
 
       <button type="button" class="text-btn gps-btn" id="gpsBtn">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
-        Use the stop nearest to me
+        <span data-i18n="setup.gps">Use the stop nearest to me</span>
       </button>
 
       <div class="add-stop" id="addStopWrap">
-        <button type="button" class="btn btn-ghost add-stop-btn" id="addStopBtn">+ Add a second stop</button>
-        <p class="hint">NextTram checks both and picks the faster one.</p>
+        <button type="button" class="btn btn-ghost add-stop-btn" id="addStopBtn" data-i18n="setup.addStop">+ Add a second stop</button>
+        <p class="hint" data-i18n="setup.addStopHint">NextTram checks both and picks the faster one.</p>
       </div>
 
       <div class="field stop-field" data-slot="1" id="stop1Field" hidden>
         <div class="field-label-row">
-          <label class="field-label" for="stop1">Stop 2 <span>also near you</span></label>
-          <button type="button" class="text-btn remove-stop" id="removeStopBtn" aria-label="Remove second stop">Remove</button>
+          <label class="field-label" for="stop1"><span data-i18n="setup.stop2">Stop 2</span> <span data-i18n="setup.alsoNear">also near you</span></label>
+          <button type="button" class="text-btn remove-stop" id="removeStopBtn" aria-label="Remove second stop" data-i18n-attr="aria-label:setup.removeStop" data-i18n="setup.remove">Remove</button>
         </div>
         <div class="stop-row">
           <div class="combo">
-            <input id="stop1" class="input" type="search" placeholder="e.g. Torgauer Platz" />
+            <input id="stop1" class="input" type="search" placeholder="e.g. Torgauer Platz" data-i18n-attr="placeholder:setup.stop2Ph" />
             <ul class="suggestions" role="listbox" hidden></ul>
           </div>
           <div class="stepper" data-walk="1">
-            <button type="button" data-step="-1" aria-label="Less walking time">−</button>
+            <button type="button" data-step="-1" aria-label="Less walking time" data-i18n-attr="aria-label:setup.lessWalk">−</button>
             <output>4 min</output>
-            <button type="button" data-step="1" aria-label="More walking time">+</button>
+            <button type="button" data-step="1" aria-label="More walking time" data-i18n-attr="aria-label:setup.moreWalk">+</button>
           </div>
         </div>
-        <button type="button" class="text-btn time-walk" data-time="1">⏱ Time my walk</button>
+        <button type="button" class="text-btn time-walk" data-time="1" data-i18n="setup.timeWalk">⏱ Time my walk</button>
       </div>
 
       <div class="field stop-field" data-slot="dest">
-        <label class="field-label" for="stopDest">Destination</label>
+        <label class="field-label" for="stopDest" data-i18n="setup.dest">Destination</label>
         <div class="combo">
-          <input id="stopDest" class="input" type="search" placeholder="e.g. Hauptbahnhof" required />
+          <input id="stopDest" class="input" type="search" placeholder="e.g. Hauptbahnhof" data-i18n-attr="placeholder:setup.destPh" required />
           <ul class="suggestions" role="listbox" hidden></ul>
         </div>
-        <button type="button" class="text-btn opt-in-btn" id="addBackWalkBtn">+ Add a walk for the trip back</button>
+        <button type="button" class="text-btn opt-in-btn" id="addBackWalkBtn" data-i18n="setup.addBackWalk">+ Add a walk for the trip back</button>
         <div class="back-walk" id="backWalkField" hidden>
           <div class="field-label-row">
-            <span class="field-label">Walk to this stop on the trip back <span>for ⇅</span></span>
-            <button type="button" class="text-btn remove-stop" id="removeBackWalkBtn" aria-label="Remove trip-back walk">Remove</button>
+            <span class="field-label"><span data-i18n="setup.backWalk">Walk to this stop on the trip back</span> <span data-i18n="setup.forSwap">for ⇅</span></span>
+            <button type="button" class="text-btn remove-stop" id="removeBackWalkBtn" aria-label="Remove trip-back walk" data-i18n-attr="aria-label:setup.removeBackWalk" data-i18n="setup.remove">Remove</button>
           </div>
           <div class="stepper" data-walk="dest">
-            <button type="button" data-step="-1" aria-label="Less walking time">−</button>
+            <button type="button" data-step="-1" aria-label="Less walking time" data-i18n-attr="aria-label:setup.lessWalk">−</button>
             <output>3 min</output>
-            <button type="button" data-step="1" aria-label="More walking time">+</button>
+            <button type="button" data-step="1" aria-label="More walking time" data-i18n-attr="aria-label:setup.moreWalk">+</button>
           </div>
-          <button type="button" class="text-btn time-walk" data-time="dest">⏱ Time my walk</button>
+          <button type="button" class="text-btn time-walk" data-time="dest" data-i18n="setup.timeWalk">⏱ Time my walk</button>
         </div>
       </div>
 
       <div class="field">
-        <span class="field-label">Show</span>
-        <div class="segmented" id="modeSeg" role="radiogroup" aria-label="Which vehicles">
-          <button type="button" role="radio" data-mode="tram">Trams</button>
-          <button type="button" role="radio" data-mode="tram_bus">Trams &amp; buses</button>
-          <button type="button" role="radio" data-mode="all">Everything</button>
+        <span class="field-label" data-i18n="setup.show">Show</span>
+        <div class="segmented" id="modeSeg" role="radiogroup" aria-label="Which vehicles" data-i18n-attr="aria-label:setup.modeLabel">
+          <button type="button" role="radio" data-mode="tram" data-i18n="setup.modeTram">Trams</button>
+          <button type="button" role="radio" data-mode="tram_bus" data-i18n="setup.modeTramBus">Trams &amp; buses</button>
+          <button type="button" role="radio" data-mode="all" data-i18n="setup.modeAll">Everything</button>
         </div>
       </div>
 
       <div class="field">
-        <label class="field-label" for="routeLabel">Name</label>
-        <input id="routeLabel" class="input" type="text" placeholder="e.g. Work" maxlength="24" />
+        <label class="field-label" for="routeLabel" data-i18n="setup.name">Name</label>
+        <input id="routeLabel" class="input" type="text" placeholder="e.g. Work" data-i18n-attr="placeholder:setup.namePh" maxlength="24" />
       </div>
 
       <div class="field">
-        <span class="field-label">Spare time on each walk <span>all routes</span></span>
-        <div class="segmented" id="bufferSeg" role="radiogroup" aria-label="Spare time on each walk">
-          <button type="button" role="radio" data-buffer="0">None</button>
+        <span class="field-label"><span data-i18n="setup.spare">Spare time on each walk</span> <span data-i18n="setup.allRoutes">all routes</span></span>
+        <div class="segmented" id="bufferSeg" role="radiogroup" aria-label="Spare time on each walk" data-i18n-attr="aria-label:setup.spare">
+          <button type="button" role="radio" data-buffer="0" data-i18n="setup.spareNone">None</button>
           <button type="button" role="radio" data-buffer="15">15 s</button>
           <button type="button" role="radio" data-buffer="30">30 s</button>
-          <button type="button" role="radio" data-buffer="60">1 min</button>
+          <button type="button" role="radio" data-buffer="60" data-i18n="setup.spare1min">1 min</button>
         </div>
       </div>
 
       <div class="field">
-        <span class="field-label">Run for a tram <span>all routes</span></span>
-        <div class="segmented" id="runSeg" role="radiogroup" aria-label="Run for a tram">
-          <button type="button" role="radio" data-run="yes">If it's the only way</button>
-          <button type="button" role="radio" data-run="no">Never</button>
+        <span class="field-label"><span data-i18n="setup.run">Run for a tram</span> <span data-i18n="setup.allRoutes">all routes</span></span>
+        <div class="segmented" id="runSeg" role="radiogroup" aria-label="Run for a tram" data-i18n-attr="aria-label:setup.run">
+          <button type="button" role="radio" data-run="yes" data-i18n="setup.runYes">If it's the only way</button>
+          <button type="button" role="radio" data-run="no" data-i18n="setup.runNo">Never</button>
         </div>
       </div>
 
       <div class="field look-field">
-        <span class="field-label">Big mark on the card <span>all routes</span></span>
-        <div class="segmented" id="markSeg" role="radiogroup" aria-label="Big mark on the card">
-          <button type="button" role="radio" data-mark="stop">Stop initials</button>
-          <button type="button" role="radio" data-mark="line">Tram number</button>
-          <button type="button" role="radio" data-mark="none">Off</button>
+        <span class="field-label"><span data-i18n="setup.mark">Big mark on the card</span> <span data-i18n="setup.allRoutes">all routes</span></span>
+        <div class="segmented" id="markSeg" role="radiogroup" aria-label="Big mark on the card" data-i18n-attr="aria-label:setup.mark">
+          <button type="button" role="radio" data-mark="stop" data-i18n="setup.markStop">Stop initials</button>
+          <button type="button" role="radio" data-mark="line" data-i18n="setup.markLine">Tram number</button>
+          <button type="button" role="radio" data-mark="none" data-i18n="setup.markOff">Off</button>
         </div>
       </div>
 
       <p class="form-error" id="setupError" hidden></p>
 
       <div class="sheet-actions">
-        <button type="button" class="btn btn-ghost danger" id="deleteRouteBtn">Delete</button>
+        <button type="button" class="btn btn-ghost danger" id="deleteRouteBtn" data-i18n="setup.delete">Delete</button>
         <span class="spacer"></span>
-        <button type="button" class="btn btn-ghost" id="pinBtn">Save as new favorite</button>
-        <button type="button" class="btn btn-primary" id="saveBtn">Save</button>
+        <button type="button" class="btn btn-ghost" id="pinBtn" data-i18n="setup.saveNew">Save as new favorite</button>
+        <button type="button" class="btn btn-primary" id="saveBtn" data-i18n="setup.save">Save</button>
       </div>
     </form>
   </dialog>
