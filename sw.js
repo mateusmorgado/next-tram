@@ -1,5 +1,5 @@
 // NextTram service worker: app shell works offline, live data always comes from the network.
-const VERSION = 'nexttram-v22';
+const VERSION = 'nexttram-v23';
 const SHELL = [
   './',
   'index.html',
@@ -11,6 +11,9 @@ const SHELL = [
   'lib/favorites-sync.js',
   'lib/assistant-guides.js',
   'lib/guide-art.js',
+  'lib/intro-gate.js',
+  'lib/intro.js',
+  'intro.css',
   'icons/assistants/claude.svg',
   'icons/assistants/chatgpt.svg',
   'icons/assistants/gemini.svg',

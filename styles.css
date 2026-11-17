@@ -402,10 +402,11 @@ html.watch .install-card { display: none; }
 
 /* ── Status bar ── */
 .statusbar { display: flex; justify-content: space-between; align-items: center; color: var(--text-3); font-size: 13px; margin-top: auto; padding-top: 4px; }
-.promo-link { align-self: center; margin-top: -8px; padding: 6px 8px; font-size: 13px; color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
-.promo-link::after { content: ' ↗'; }
+.foot-links { align-self: center; display: flex; gap: 8px; margin-top: -8px; }
+.promo-link { padding: 6px 8px; border: 0; background: none; font: inherit; font-size: 13px; color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
+.promo-link.ext::after { content: ' ↗'; }
 .promo-link:hover { color: var(--text-2); }
-html.watch .promo-link { display: none; }
+html.watch .foot-links { display: none; }
 .text-btn { border: 0; background: none; display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-weight: 600; font-size: 14px; padding: 8px 4px; }
 .text-btn svg { width: 18px; height: 18px; }
 .loading #refreshBtn svg { animation: spin 0.9s linear infinite; }
@@ -493,6 +494,7 @@ html.watch .promo-link { display: none; }
   html:not(.no-watch) .compare,
   html:not(.no-watch) .upcoming,
   html:not(.no-watch) .statusbar,
+  html:not(.no-watch) .foot-links,
   html:not(.no-watch) #errorNotice { display: none !important; }
 }
 

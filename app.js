@@ -2,6 +2,7 @@ import { CITIES, DEFAULT_ROUTES, DEFAULT_MODE_FILTER, DEFAULTS_VERSION, RETIRED_
 import { newCode, isValidCode, formatCode, pushRoutes, APP_URL } from './lib/favorites-sync.js';
 import { ASSISTANTS, TERMS } from './lib/assistant-guides.js';
 import { art } from './lib/guide-art.js';
+import { countOpen, introDue } from './lib/intro-gate.js';
 import {
   createTransitClient,
   fetchRoute,
@@ -72,7 +73,7 @@ function loadState() {
   const buffer = BUFFER_CHOICES.includes(saved.buffer) ? saved.buffer : bufferSecs(routes[0]?.buffer);
   // Running for a tram is allowed unless turned off; like spare time, each route carries a copy.
   const run = typeof saved.run === 'boolean' ? saved.run : routes[0]?.noRun !== true;
-  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, buffer, run, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '', installHidden: Boolean(saved.installHidden) };
+  return { routes, activeId, theme: saved.theme || 'system', watch: Boolean(saved.watch), mark, buffer, run, countdown: Boolean(saved.countdown), defaults: DEFAULTS_VERSION, syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(), synced: saved.synced || '', installHidden: Boolean(saved.installHidden), opens: Number(saved.opens) || 0, lastOpen: Number(saved.lastOpen) || 0, introShown: Number(saved.introShown) || 0 };
 }
 
 function saveState() {
@@ -1369,6 +1370,40 @@ function wire() {
   window.addEventListener('resize', capUpcoming);
 }
 
+// ── "How it works" intro: first open, again on the 4th open, and from the link at the bottom ──
+let introOpen = false;
+const watchy = () => document.documentElement.classList.contains('watch') || matchMedia('(max-width: 300px) and (min-aspect-ratio: 2/3)').matches;
+const onlyDefaults = () => state.routes.every((r) => DEFAULT_ROUTES.some((d) => d.id === r.id));
+
+async function showIntro(auto) {
+  if (introOpen) return;
+  introOpen = true;
+  try {
+    const { openIntro } = await import('./lib/intro.js');
+    const due = auto ? introDue(state) : '';
+    await openIntro({
+      reminder: due === 'reminder',
+      needsSetup: onlyDefaults(),
+      onClose: (result) => {
+        if (auto) state.introShown = (state.introShown || 0) + 1;
+        else if (result !== 'skip') state.introShown = Math.max(state.introShown || 0, 2); // read it on their own: no reminder needed
+        saveState();
+      },
+      onSetup: () => openSetup(null),
+    });
+  } catch {} // offline before the intro was ever cached: try again next time
+  introOpen = false;
+}
+
+function maybeShowIntro() {
+  if (introOpen || watchy() || document.querySelector('dialog[open]')) return;
+  if (introDue(state)) showIntro(true);
+}
+
+function countThisOpen() {
+  if (countOpen(state)) saveState();
+}
+
 function applyUrlParams() {
   const p = new URLSearchParams(location.search);
   const id = p.get('route');
@@ -1390,6 +1425,14 @@ function init() {
   setInterval(render, 1000);
   scheduleSync();
   setupInstall();
+  countThisOpen();
+  setTimeout(maybeShowIntro, 400); // after the first paint, so the app is already there behind it
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    countThisOpen();
+    maybeShowIntro();
+  });
+  $('introBtn').addEventListener('click', () => showIntro(false));
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
