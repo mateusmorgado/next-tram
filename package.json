@@ -4,10 +4,23 @@
   "description": "When can I actually catch the next tram? Live departures for Leipzig and Berlin as a PWA, MCP server and Alexa skill.",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
-    "start": "node scripts/serve.mjs",
+    "start": "npm run build && node scripts/serve.ts",
+    "build": "node scripts/build.ts",
     "test": "node --test",
+    "typecheck": "tsc",
     "mcp": "node mcp-server.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.160.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
   }
 }

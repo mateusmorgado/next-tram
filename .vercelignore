@@ -1,8 +1,6 @@
-# The PWA and the api/ functions are deployed. api/alexa.js imports alexa-skill.mjs, and the
-# AI screen offers the Alexa voice model for copying, so both stay in. The rest stays in the repo.
+# Vercel builds dist/ and deploys api/ (which imports src/). The rest stays in the repo.
 .github
-mcp-server.mjs
-scripts
+scripts/serve.ts
 test
 docs
 README.md
