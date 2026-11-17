@@ -23,6 +23,10 @@ Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backe
 
 All three share one module, [`lib/transit.js`](lib/transit.js).
 
+## Languages
+
+The app speaks **English, Deutsch and Português (Brasil)**. It starts in the browser's language; the footer switches it and remembers the choice. All text lives in `lib/i18n/{en,de,pt}.js` (`npm test` checks that the three have the same keys). The phrases people are told to say (`voice.*`) are real utterances of the Alexa models in `alexa/`, and a test checks that. To add a language, copy `en.js`, translate it, and register it in `lib/i18n.js`.
+
 ## How it decides
 
 - **Two home stops in parallel.** A route starts with one stop; **+ Add a second stop** adds another, each with its own walk time (default: Edlichstraße 2 min with Tram 7, Torgauer Platz 4 min with Trams 3 and 8). Both are checked at the same time and the results are merged.

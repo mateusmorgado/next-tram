@@ -1,6 +1,7 @@
 import { CITIES, DEFAULT_ROUTES, DEFAULT_MODE_FILTER, DEFAULTS_VERSION, RETIRED_DEFAULTS } from './lib/stops.js';
 import { newCode, isValidCode, formatCode, pushRoutes, APP_URL } from './lib/favorites-sync.js';
-import { ASSISTANTS, TERMS } from './lib/assistant-guides.js';
+import { getAssistants, termsText, fillVoice } from './lib/assistant-guides.js';
+import { t, tn, setLang, getLang, detectLang, savedLang, applyStaticText, LANGS } from './lib/i18n.js';
 import { art } from './lib/guide-art.js';
 import { countOpen, introDue } from './lib/intro-gate.js';
 import {
@@ -117,9 +118,8 @@ function setHtml(el, html) {
   el.innerHTML = html;
   return true;
 }
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** "3:42 min walk", plus the spare time when there is some: "3:42 min walk + 30 s". */
-const walkText = (c) => `${formatWalk(c.walkBase ?? c.walk)} walk${c.buffer ? ` + ${c.buffer} s` : ''}`;
+const walkText = (c) => (c.buffer ? t('hero.walkSpare', { time: formatWalk(c.walkBase ?? c.walk), secs: c.buffer }) : t('hero.walk', { time: formatWalk(c.walkBase ?? c.walk) }));
 
 // ───────────────────────── Rendering ─────────────────────────
 
@@ -136,7 +136,7 @@ function renderFavs() {
         (r) =>
           `<button class="chip" type="button" data-route="${esc(r.id)}" aria-current="${r.id === state.activeId}">${esc(routeLabel(r))}</button>`,
       )
-      .join('') + `<button class="chip chip-add" type="button" id="addRouteBtn">+ New</button>`;
+      .join('') + `<button class="chip chip-add" type="button" id="addRouteBtn">${esc(t('favs.new'))}</button>`;
 }
 
 function renderRoute() {
@@ -146,9 +146,9 @@ function renderRoute() {
   const homes = route.stops.map((s) => `<strong>${esc(shortStopName(s.stop.name))}</strong>`).join(' / ');
   const dest = `<strong>${esc(shortStopName(route.dest.name))}</strong>`;
   const full = reversed
-    ? `<span class="back-tag">Back</span>${dest}<span class="arrow">→</span>${homes}`
+    ? `<span class="back-tag">${esc(t('route.back'))}</span>${dest}<span class="arrow">→</span>${homes}`
     : `${homes}<span class="arrow">→</span>${dest}`;
-  const short = reversed ? `${dest} → home` : `→ ${dest}`;
+  const short = reversed ? t('route.backShort', { dest }) : `→ ${dest}`;
   $('routeText').innerHTML = `<span class="rt-full">${full}</span><span class="rt-short">${short}</span>`;
   $('swapBtn').setAttribute('aria-pressed', String(reversed));
 }
@@ -271,16 +271,16 @@ function renderHero(plan, now, slots) {
       const offline = navigator.onLine === false;
       setHtml(
         el,
-        `<div class="hero-empty" id="heroMain"><strong>${offline ? "You're offline" : "Couldn't load departures"}</strong>${
-          offline ? "Departures will load when you're back online." : 'Tap to try again.'
+        `<div class="hero-empty" id="heroMain"><strong>${esc(offline ? t('hero.offline') : t('hero.failed'))}</strong>${
+          esc(offline ? t('hero.offlineText') : t('hero.failedText'))
         }</div>`,
       );
       return;
     }
     setHtml(
       el,
-      `<div class="hero-empty"><strong>No catchable departures</strong>${
-        connections.length ? 'Nothing you can still reach in the next hour or two.' : 'No trams or buses found for this route right now.'
+      `<div class="hero-empty"><strong>${esc(t('hero.none'))}</strong>${
+        esc(connections.length ? t('hero.noneText') : t('hero.noneFound'))
       }</div>`,
     );
     return;
@@ -291,46 +291,46 @@ function renderHero(plan, now, slots) {
   const advice = leaveAdvice(c, now);
 
   let delay = '';
-  if (!c.realtime) delay = '<span class="delay plan">scheduled</span>';
+  if (!c.realtime) delay = `<span class="delay plan">${esc(t('hero.scheduled'))}</span>`;
   else delay = delayChip(c.delayMin);
 
   let leave;
   // No walk set for the trip back: you're already at the stop, so no leave advice at all.
-  if (advice.atStop) leave = reversed ? '' : `<div class="leave idle">You're at the stop</div>`;
+  if (advice.atStop) leave = reversed ? '' : `<div class="leave idle">${esc(t('hero.atStop'))}</div>`;
   else if (advice.now)
     leave = advice.run
-      ? `<div class="leave now">🏃 Run now<small>${walkText(c)}, only if you run</small></div>`
-      : `<div class="leave now">🏃 Leave now<small>${walkText(c)}</small></div>`;
+      ? `<div class="leave now">🏃 ${esc(t('hero.runNow'))}<small>${esc(t('hero.runNowSub', { walk: walkText(c) }))}</small></div>`
+      : `<div class="leave now">🏃 ${esc(t('hero.leaveNow'))}<small>${esc(walkText(c))}</small></div>`;
   else
     leave =
       advice.minutes === 0
-        ? `<div class="leave">🚶 Leave now<small>${walkText(c)}</small></div>` // still on time: green, not the red hurry bar
-        : `<div class="leave">🚶 Leave in ${advice.minutes} min<small>${walkText(c)}</small></div>`;
-  const eyebrow = reversed ? `From ${esc(c.boardAt || c.stopName)} to` : 'Go to stop';
+        ? `<div class="leave">🚶 ${esc(t('hero.leaveNow'))}<small>${esc(walkText(c))}</small></div>` // still on time: green, not the red hurry bar
+        : `<div class="leave">🚶 ${esc(t('hero.leaveIn', { n: advice.minutes }))}<small>${esc(walkText(c))}</small></div>`;
+  const eyebrow = reversed ? esc(t('hero.from', { stop: c.boardAt || c.stopName })) : esc(t('hero.goToStop'));
   const placeName = reversed ? c.toName : c.stopName;
   const place = esc(placeName);
   const mark = heroMark(c, placeName, slots);
   const pick = plan.manual
-    ? `<span class="pick">Your pick · <button class="link" type="button" id="autoBtn">back to fastest</button></span>`
+    ? `<span class="pick">${esc(t('hero.pick'))} · <button class="link" type="button" id="autoBtn">${esc(t('hero.backToFastest'))}</button></span>`
     : eyebrow;
   const html = `
-    <div class="hero-main" id="heroMain" title="Tap to refresh">
+    <div class="hero-main" id="heroMain" title="${esc(t('hero.tapRefresh'))}">
       ${mark}
       <div class="hero-eyebrow">${pick}</div>
       <div class="hero-stop">${place}</div>
       <div class="hero-line">${badge(c, 'lg')}<span class="dir" title="${esc(c.direction)}">→ ${esc(shortDirection(c.direction))}</span></div>
       <div class="hero-count">
-        <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${plural(mins, 'minute')}. Tap to switch between minutes and timer">
+        <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${esc(t('hero.countAria', { minutes: tn('minutes', mins) }))}">
           ${
             state.countdown
               ? `<span class="count-num"><span class="timer-text" data-tick="clock"></span></span><span class="count-unit" aria-hidden="true">&#8203;</span>`
-              : `<span class="count-num">${mins}</span><span class="count-unit">min</span>`
+              : `<span class="count-num">${mins}</span><span class="count-unit">${esc(t('hero.min'))}</span>`
           }
         </button>
         <div class="times">
-          <div>leaves <b>${formatClock(c.depMs)}</b> ${delay}</div>
-          ${c.arrMs ? `<div>arrives <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${changeText(c)}` : ''}</div>` : ''}
-          ${c.walkAfterMin ? `<div class="walk-after">get off at ${esc(c.getOffAt || 'a nearby stop')}, then ${c.walkAfterMin} min walk</div>` : ''}
+          <div>${esc(t('hero.leaves'))} <b>${formatClock(c.depMs)}</b> ${delay}</div>
+          ${c.arrMs ? `<div>${esc(t('hero.arrives'))} <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${changeText(c)}` : ''}</div>` : ''}
+          ${c.walkAfterMin ? `<div class="walk-after">${esc(t('hero.getOff', { stop: c.getOffAt || t('hero.nearbyStop'), n: c.walkAfterMin }))}</div>` : ''}
         </div>
       </div>
     </div>
@@ -358,12 +358,12 @@ function renderCompare(plan, now, slots) {
       const isBest = plan.hero && plan.hero.slot === p.slot && !plan.manual;
       const n = p.next;
       return `<button class="stop-card ${isBest ? 'best' : ''}" type="button" ${n ? `data-trip="${esc(n.id)}"` : 'disabled'}>
-        <div class="meta"><span>${reversed ? 'Get off at' : `Stop ${p.slot + 1} · ${formatWalk(o.walkBase)} walk`}</span>${isBest ? '<span class="best-tag">Best</span>' : ''}</div>
+        <div class="meta"><span>${esc(reversed ? t('compare.getOff') : t('compare.stop', { n: p.slot + 1, walk: formatWalk(o.walkBase) }))}</span>${isBest ? `<span class="best-tag">${esc(t('compare.best'))}</span>` : ''}</div>
         <div class="name">${esc(name)}</div>
         ${
           n
-            ? `<div class="next">${badge(n)}<span class="in">${minutesUntil(n, now)} min</span><span class="at">${formatClock(reversed && n.arrMs ? n.arrMs : n.depMs)}</span></div>`
-            : `<div class="none">${p.count ? 'Nothing catchable' : 'No departures found'}</div>`
+            ? `<div class="next">${badge(n)}<span class="in">${minutesUntil(n, now)} ${esc(t('hero.min'))}</span><span class="at">${formatClock(reversed && n.arrMs ? n.arrMs : n.depMs)}</span></div>`
+            : `<div class="none">${esc(p.count ? t('compare.nothing') : t('compare.noDepartures'))}</div>`
         }
       </button>`;
     })
@@ -395,7 +395,7 @@ function renderUpcoming(plan, now) {
               .sort((x, y) => x.arrMs - y.arrMs)
               .map((g) => `${g.toName} ${formatClock(g.arrMs)}`)
               .join(' · ')
-          : [multi ? (reversed ? `to ${c.toName}` : `from ${c.stopName}`) : '', c.walkAfterMin ? `+${c.walkAfterMin} min walk` : '', c.arrMs ? `arr ${formatClock(c.arrMs)}` : '']
+          : [multi ? (reversed ? t('upcoming.to', { name: c.toName }) : t('upcoming.from', { name: c.stopName })) : '', c.walkAfterMin ? t('upcoming.walk', { n: c.walkAfterMin }) : '', c.arrMs ? t('upcoming.arr', { time: formatClock(c.arrMs) }) : '']
               .filter(Boolean)
               .join(' · ');
       const d = c.realtime ? delayLabel(c.delayMin) : null;
@@ -404,7 +404,7 @@ function renderUpcoming(plan, now) {
         <span class="t">${formatClock(c.depMs)}</span>
         ${badge(c)}
         <span class="info"><span class="dir" title="${esc(c.direction)}">${esc(shortDirection(c.direction))}</span><span class="sub${group.length > 1 ? ' both' : ''}">${chip}${esc(sub)}</span></span>
-        <span class="in">${tight ? 'run' : `${minutesUntil(c, now)} min`}</span>
+        <span class="in">${tight ? esc(t('upcoming.run')) : `${minutesUntil(c, now)} ${esc(t('hero.min'))}`}</span>
       </button></li>`;
     })
     .join('');
@@ -442,38 +442,38 @@ function capUpcoming() {
 
 function delayChip(delayMin, size = '') {
   const d = delayLabel(delayMin);
-  return `<span class="delay ${d.key} ${size}" role="button" tabindex="0" data-delay-info title="What does ${esc(d.label)} mean?">${esc(d.label)}</span>`;
+  const label = t(`delay.${d.key}`);
+  return `<span class="delay ${d.key} ${size}" role="button" tabindex="0" data-delay-info title="${esc(t('delay.what', { label }))}">${esc(label)}</span>`;
 }
 
 function openDelayInfo() {
   $('delayInfoList').innerHTML =
-    DELAY_BRACKETS.map((b) => `<li><span class="delay ${b.key}">${esc(b.label)}</span><span>${esc(b.text)}</span></li>`).join('') +
-    `<li><span class="delay plan">scheduled</span><span>No live data for this tram, only the timetable.</span></li>`;
+    DELAY_BRACKETS.map((b) => `<li><span class="delay ${b.key}">${esc(t(`delay.${b.key}`))}</span><span>${esc(t(`delay.${b.key}.text`))}</span></li>`).join('') +
+    `<li><span class="delay plan">${esc(t('hero.scheduled'))}</span><span>${esc(t('delay.scheduled.text'))}</span></li>`;
   $('delayInfo').showModal();
 }
 
 // ───────────────────────── Assistants ─────────────────────────
 
 const logo = (key) => `<img class="ai-logo" src="icons/assistants/${key}.svg" alt="" width="48" height="48">`;
-const copyBox = (value, label = 'Copy', shown = value) =>
+const copyBox = (value, label, shown = value) =>
   `<span class="ai-copy"><code>${esc(shown)}</code><button type="button" class="btn ai-copy-btn" data-copy="${esc(value)}">${esc(label)}</button></span>`;
 
 /** The links and texts the guides offer for copying. */
 function assistantCopies() {
-  const first = state.routes[0];
   const code = state.syncCode;
   return {
-    mcp: copyBox(`${APP_URL}/api/mcp/${code}`),
-    alexaPin: `<span class="ai-copy ai-pin"><input id="alexaPin" inputmode="numeric" autocomplete="one-time-code" maxlength="2" placeholder="42" aria-label="Number Alexa said">
-      <button type="button" class="btn btn-primary ai-copy-btn" data-alexa-link>Connect</button></span><span class="ai-pin-msg" id="alexaPinMsg" role="status"></span>`,
-    siri: copyBox(`${APP_URL}/api/say?code=${code}`),
-    siriBack: copyBox(`${APP_URL}/api/say?code=${code}&back=1`),
+    mcp: copyBox(`${APP_URL}/api/mcp/${code}`, t('ai.copy')),
+    alexaPin: `<span class="ai-copy ai-pin"><input id="alexaPin" inputmode="numeric" autocomplete="one-time-code" maxlength="2" placeholder="42" aria-label="${esc(t('ai.pinAria'))}">
+      <button type="button" class="btn btn-primary ai-copy-btn" data-alexa-link>${esc(t('ai.connect'))}</button></span><span class="ai-pin-msg" id="alexaPinMsg" role="status"></span>`,
+    siri: copyBox(`${APP_URL}/api/say?code=${code}&lang=${getLang()}`, t('ai.copy')),
+    siriBack: copyBox(`${APP_URL}/api/say?code=${code}&back=1&lang=${getLang()}`, t('ai.copy')),
   };
 }
 
 const firstName = () => {
   const first = state.routes[0];
-  return first?.label || first?.dest?.name || 'your first favorite';
+  return first?.label || first?.dest?.name || t('ai.firstFallback');
 };
 
 /** Fills [[term:key|words]], [[copy:key]] and [[first]] in guide text. */
@@ -494,12 +494,12 @@ function openAssistants() {
 function showAssistantPicker() {
   $('aiBody').classList.remove('wizard');
   $('aiBody').innerHTML = `
-    <h2 id="aiInfoTitle" class="ai-title">Add NextTram to your assistant</h2>
-    <p class="ai-lead">Then just ask <b>“when is the next tram”</b>. Pick your assistant:</p>
-    <ul class="ai-grid">${ASSISTANTS.map(
+    <h2 id="aiInfoTitle" class="ai-title">${esc(t('ai.title'))}</h2>
+    <p class="ai-lead">${t('ai.lead', { ask: esc(t('voice.ask')) })}</p>
+    <ul class="ai-grid">${getAssistants().map(
       (a) => `<li><button type="button" class="ai-tile" data-assistant="${a.key}">${logo(a.key)}<b>${esc(a.name)}</b><span>${esc(a.where)}</span></button></li>`,
     ).join('')}</ul>
-    <div class="ai-note">${fillGuide(`It answers for your [[term:first|first favorite]]: [[first]].`, {})}<div class="explain" hidden></div></div>`;
+    <div class="ai-note">${fillGuide(t('ai.note'), {})}<div class="explain" hidden></div></div>`;
 }
 
 /**
@@ -507,7 +507,7 @@ function showAssistantPicker() {
  * at most one thing to tap or type, an optional folded tip, and Back / Next.
  */
 function showAssistantGuide(key, index = 0) {
-  const a = ASSISTANTS.find((x) => x.key === key);
+  const a = getAssistants().find((x) => x.key === key);
   if (!a) return showAssistantPicker();
   const total = a.steps.length;
   const i = Math.max(0, Math.min(index, total - 1));
@@ -516,29 +516,29 @@ function showAssistantGuide(key, index = 0) {
   const last = i === total - 1;
   $('aiBody').innerHTML = `
     <div class="ai-guide-head">
-      <button type="button" class="icon-btn ai-back" data-assistant-back aria-label="All assistants">
+      <button type="button" class="icon-btn ai-back" data-assistant-back aria-label="${esc(t('ai.all'))}">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
       </button>
       ${logo(a.key)}<b class="ai-guide-name">${esc(a.name)}</b>
     </div>
-    <div class="ai-progress" role="progressbar" aria-valuemin="1" aria-valuemax="${total}" aria-valuenow="${i + 1}" aria-label="Step ${i + 1} of ${total}">
+    <div class="ai-progress" role="progressbar" aria-valuemin="1" aria-valuemax="${total}" aria-valuenow="${i + 1}" aria-label="${esc(t('ai.stepOf', { n: i + 1, total }))}">
       ${a.steps.map((_, n) => `<span class="${n < i ? 'done' : n === i ? 'now' : ''}"></span>`).join('')}
     </div>
     <div class="ai-step" data-step="${i}">
       <div class="ai-art">${art(st.art)}</div>
-      <span class="ai-step-no">Step ${i + 1} of ${total}</span>
+      <span class="ai-step-no">${esc(t('ai.stepOf', { n: i + 1, total }))}</span>
       <h2 id="aiInfoTitle" class="ai-title">${esc(st.title)}</h2>
       <p class="ai-text">${fillGuide(st.text, copies)}</p>
       <div class="explain" hidden></div>
       ${st.action ? `<div class="ai-action">${fillGuide(st.action, copies)}</div>` : ''}
-      ${i === 0 && a.needs ? `<p class="ai-needs">You need: ${esc(a.needs)} · ${esc(a.time)}</p>` : ''}
-      ${st.tip ? `<details class="ai-tip"><summary>${esc(st.tipLabel || 'Not working?')}</summary><div>${fillGuide(st.tip, copies)}<div class="explain" hidden></div></div></details>` : ''}
+      ${i === 0 && a.needs ? `<p class="ai-needs">${esc(t('ai.needs', { needs: a.needs, time: a.time }))}</p>` : ''}
+      ${st.tip ? `<details class="ai-tip"><summary>${esc(st.tipLabel || t('ai.notWorking'))}</summary><div>${fillGuide(st.tip, copies)}<div class="explain" hidden></div></div></details>` : ''}
     </div>
     <div class="ai-nav">
-      ${i > 0 ? `<button type="button" class="btn ai-prev" data-step-go="${i - 1}">Back</button>` : '<span></span>'}
+      ${i > 0 ? `<button type="button" class="btn ai-prev" data-step-go="${i - 1}">${esc(t('ai.back'))}</button>` : '<span></span>'}
       ${last
-        ? `<button type="submit" class="btn btn-primary ai-next" value="ok">Done</button>`
-        : `<button type="button" class="btn btn-primary ai-next" data-step-go="${i + 1}">Next</button>`}
+        ? `<button type="submit" class="btn btn-primary ai-next" value="ok">${esc(t('ai.done'))}</button>`
+        : `<button type="button" class="btn btn-primary ai-next" data-step-go="${i + 1}">${esc(t('ai.next'))}</button>`}
     </div>`;
   $('aiBody').dataset.guide = a.key;
   $('aiBody').classList.add('wizard');
@@ -551,15 +551,15 @@ function toggleTerm(btn) {
   const scope = btn.closest('.ai-tip > div, li, .ai-note, .ai-step');
   const box = scope?.querySelector(':scope > .explain');
   if (!box) return;
-  const t = TERMS[btn.dataset.term];
+  const term = termsText(btn.dataset.term);
   const open = btn.getAttribute('aria-expanded') === 'true';
   scope.querySelectorAll('.term').forEach((b) => b.setAttribute('aria-expanded', 'false'));
-  if (open || !t) {
+  if (open || !term) {
     box.hidden = true;
     return;
   }
   btn.setAttribute('aria-expanded', 'true');
-  box.innerHTML = `<b>${esc(t.title)}</b><span>${esc(t.text)}</span>`;
+  box.innerHTML = `<b>${esc(term.title)}</b><span>${esc(term.text)}</span>`;
   box.hidden = false;
 }
 
@@ -568,10 +568,10 @@ async function linkAlexa() {
   const msg = $('alexaPinMsg');
   const pin = ($('alexaPin')?.value || '').replace(/\D/g, '');
   if (pin.length !== 2) {
-    msg.textContent = 'Type the 2-digit number Alexa said.';
+    msg.textContent = t('ai.pinNeed');
     return;
   }
-  msg.textContent = 'Connecting…';
+  msg.textContent = t('ai.pinWorking');
   try {
     await pushRoutes(state.syncCode, state.routes);
     const res = await fetch('/api/alexa-link', {
@@ -580,9 +580,9 @@ async function linkAlexa() {
       body: JSON.stringify({ pin, code: state.syncCode }),
     });
     const out = await res.json().catch(() => ({}));
-    msg.textContent = res.ok ? 'Connected ✓ Alexa now uses your stops.' : out.error || 'That didn’t work. Ask Alexa for a new number.';
+    msg.textContent = res.ok ? t('ai.pinOk') : t('ai.pinFail');
   } catch {
-    msg.textContent = 'No connection. Try again in a moment.';
+    msg.textContent = t('ai.pinOffline');
   }
 }
 
@@ -591,21 +591,21 @@ async function copyFromButton(b) {
   try {
     const text = b.dataset.copyFile ? await (await fetch(b.dataset.copyFile, { cache: 'no-cache' })).text() : b.dataset.copy;
     await navigator.clipboard.writeText(text);
-    b.textContent = 'Copied ✓';
+    b.textContent = t('ai.copied');
   } catch {
-    b.textContent = 'Copy failed';
+    b.textContent = t('ai.copyFailed');
   }
   setTimeout(() => (b.textContent = label), 2500);
 }
 
 function renderStatus(now) {
   const el = $('statusText');
-  if (loading && !lastFetch) el.textContent = 'Loading live departures…';
-  else if (!lastFetch) el.textContent = loadFailed ? 'Not loaded yet' : '';
+  if (loading && !lastFetch) el.textContent = t('status.loadingLive');
+  else if (!lastFetch) el.textContent = loadFailed ? t('status.notLoaded') : '';
   else {
     const ago = Math.round((now - lastFetch) / 1000);
-    const when = ago < 10 ? 'just now' : ago < 60 ? `${ago}s ago` : `${Math.floor(ago / 60)} min ago`;
-    el.textContent = `Updated ${when}${lastSource ? ` · ${lastSource}` : ''}`;
+    const when = ago < 10 ? t('status.justNow') : ago < 60 ? t('status.secsAgo', { n: ago }) : t('status.minAgo', { n: Math.floor(ago / 60) });
+    el.textContent = `${t('status.updated', { when })}${lastSource ? ` · ${lastSource}` : ''}`;
   }
   document.body.classList.toggle('loading', loading);
 }
@@ -636,15 +636,15 @@ async function refresh() {
           return shortStopName((reversed ? o?.to : o?.from)?.name || '');
         })
         .join(', ');
-      err.textContent = `Couldn't load ${failed}. Showing the other stop only.`;
+      err.textContent = t('error.partial', { stops: failed });
       err.hidden = false;
     } else err.hidden = true;
   } catch (e) {
     if (token !== fetchToken) return;
     const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
     $('errorNotice').textContent = offline
-      ? "You're offline. Departures will load when you're back online."
-      : `Couldn't load live departures (${e.message}). Tap Refresh to try again.`;
+      ? t('error.offline')
+      : t('error.failed', { reason: e.message });
     $('errorNotice').hidden = false;
     loadFailed = true;
     failCount++;
@@ -721,9 +721,9 @@ function scheduleRefresh() {
 /** "change at Ostplatz to 3", so a changing trip doesn't look like a direct one. */
 function changeText(c) {
   const first = c.changes?.[0];
-  if (!first?.at) return plural(c.transfers, 'change');
-  const more = c.transfers > 1 ? ` (+${c.transfers - 1} more)` : '';
-  return `change at ${esc(first.at)}${first.line ? ` to ${esc(first.line)}` : ''}${more}`;
+  if (!first?.at) return tn('change', c.transfers);
+  const more = c.transfers > 1 ? t('change.more', { n: c.transfers - 1 }) : '';
+  return `${esc(t('change.at', { at: first.at }))}${first.line ? esc(t('change.to', { line: first.line })) : ''}${more}`;
 }
 
 // ───────────────────────── Theme & watch ─────────────────────────
@@ -755,14 +755,12 @@ function isInstalled() {
   return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 }
 
+let installMode = 'prompt';
 function showInstallCard(mode) {
   if (state.installHidden || isInstalled()) return;
+  installMode = mode;
   const ios = mode === 'ios';
-  $('installHint').textContent = ios
-    ? 'Tap Share, then “Add to Home Screen”.'
-    : mode === 'menu'
-      ? 'Open the browser menu and choose “Add to Home screen”.'
-      : 'Opens like an app, straight from your home screen.';
+  $('installHint').textContent = ios ? t('install.hintIos') : mode === 'menu' ? t('install.hintMenu') : t('install.hint');
   $('installGo').hidden = mode !== 'prompt';
   $('installCard').hidden = false;
 }
@@ -834,10 +832,10 @@ function openSetup(routeId) {
   draft.stops = draft.stops.slice(0, 2);
   secondStop = draft.stops.length > 1 && Boolean(draft.stops[1].stop);
   if (!secondStop) draft.stops = draft.stops.slice(0, 1);
-  $('setupTitle').textContent = base ? 'Edit route' : 'New route';
+  $('setupTitle').textContent = base ? t('setup.title.edit') : t('setup.title.new');
   $('deleteRouteBtn').hidden = !base || state.routes.length < 2;
   $('pinBtn').hidden = !base;
-  $('saveBtn').textContent = base ? 'Save' : 'Add favorite';
+  $('saveBtn').textContent = base ? t('setup.save') : t('setup.add');
   $('setupError').hidden = true;
   syncSetupForm();
   $('setupSheet').showModal();
@@ -854,7 +852,7 @@ function syncSetupForm() {
   $('addStopWrap').hidden = secondStop;
   $('backWalkField').hidden = !backWalk;
   $('addBackWalkBtn').hidden = backWalk;
-  $('stop0Label').textContent = secondStop ? 'Stop 1' : 'Your stop';
+  $('stop0Label').textContent = secondStop ? t('setup.stop1') : t('setup.yourStop');
   document.querySelectorAll('#markSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mark === state.mark)));
   document.querySelectorAll('#bufferSeg button').forEach((b) => b.setAttribute('aria-checked', String(Number(b.dataset.buffer) === state.buffer)));
   document.querySelectorAll('#runSeg button').forEach((b) => b.setAttribute('aria-checked', String((b.dataset.run === 'yes') === state.run)));
@@ -916,10 +914,10 @@ let walkTimer = null; // { key, start, stopped }
 let walkTick = 0;
 
 function walkKeyName(key) {
-  if (key === 'dest') return draft?.dest ? shortStopName(draft.dest.name) : 'the destination stop';
+  if (key === 'dest') return draft?.dest ? shortStopName(draft.dest.name) : t('timer.destStop');
   const s = draft?.stops[Number(key)]?.stop;
   const typed = $(key === '0' ? 'stop0' : 'stop1').value.trim();
-  return s ? shortStopName(s.name) : typed || 'your stop';
+  return s ? shortStopName(s.name) : typed || t('timer.yourStop');
 }
 
 function saveWalkTimer() {
@@ -931,7 +929,7 @@ function saveWalkTimer() {
 
 function openWalkTimer(key, start = 0) {
   walkTimer = { key: String(key), start, stopped: 0 };
-  $('walkTimerTo').textContent = `From your front door to ${walkKeyName(walkTimer.key)}`;
+  $('walkTimerTo').textContent = t('timer.from', { stop: walkKeyName(walkTimer.key) });
   renderWalkTimer();
   if (!$('walkTimer').open) $('walkTimer').showModal();
   if (start) startTicking();
@@ -963,7 +961,7 @@ function renderWalkTimer() {
   $('swTime').textContent = text;
   $('swTime').classList.toggle('running', running);
   $('swAgain').hidden = !walkTimer.stopped;
-  $('swMain').textContent = !walkTimer.start ? 'Start' : running ? 'Stop' : `Use ${text}`;
+  $('swMain').textContent = !walkTimer.start ? t('timer.start') : running ? t('timer.stop') : t('timer.use', { time: text });
 }
 
 function walkTimerMain() {
@@ -1029,8 +1027,8 @@ function readDraft() {
 }
 
 function validate(route) {
-  if (!route.stops.length) return 'Pick at least one stop near you.';
-  if (!route.dest) return 'Pick a destination.';
+  if (!route.stops.length) return t('setup.needStop');
+  if (!route.dest) return t('setup.needDest');
   return null;
 }
 
@@ -1080,7 +1078,7 @@ function setupCombo(inputId, onPick) {
   const clear = document.createElement('button');
   clear.type = 'button';
   clear.className = 'clear-btn';
-  clear.setAttribute('aria-label', 'Clear');
+  clear.setAttribute('aria-label', t('setup.clear'));
   clear.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   clear.addEventListener('pointerdown', (e) => e.preventDefault()); // keep the keyboard open
   clear.addEventListener('click', () => {
@@ -1113,14 +1111,14 @@ function setupCombo(inputId, onPick) {
     if (q.length < 2) return close();
     timer = setTimeout(async () => {
       items = []; // nothing to pick while "Searching…" is showing
-      show('<li class="muted">Searching…</li>');
+      show(`<li class="muted">${esc(t('setup.searching'))}</li>`);
       let found = [];
       try {
         found = await client.searchStops(draft.city, q);
       } catch {}
       if (my !== seq) return;
       items = found;
-      if (!items.length) return show('<li class="muted">No stops found</li>');
+      if (!items.length) return show(`<li class="muted">${esc(t('setup.noStops'))}</li>`);
       active = -1;
       show(items.map((s, i) => `<li role="option" data-i="${i}" aria-selected="false">${esc(s.name)}</li>`).join(''));
     }, 250);
@@ -1148,10 +1146,9 @@ function setupCombo(inputId, onPick) {
 
 function useGps() {
   const btn = $('gpsBtn');
-  const label = btn.lastChild;
-  const original = label.textContent;
+  const label = btn.querySelector('span');
   const done = () => {
-    label.textContent = original;
+    label.textContent = t('setup.gps');
     btn.disabled = false;
   };
   const fail = (msg) => {
@@ -1159,18 +1156,18 @@ function useGps() {
     $('setupError').hidden = false;
     done();
   };
-  if (!window.isSecureContext) return fail('Location only works over https (or on localhost).');
-  if (!navigator.geolocation) return fail('Location is not available in this browser.');
+  if (!window.isSecureContext) return fail(t('gps.needHttps'));
+  if (!navigator.geolocation) return fail(t('gps.unavailable'));
   $('setupError').hidden = true;
   btn.disabled = true;
-  label.textContent = ' Finding your location…';
+  label.textContent = t('gps.finding');
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
-      label.textContent = ' Looking for stops nearby…';
+      label.textContent = t('gps.looking');
       try {
         const { latitude: lat, longitude: lon } = pos.coords;
         const near = await client.nearbyStops(draft.city, lat, lon);
-        if (!near.length) return fail(`No ${CITIES[draft.city]?.label || ''} stops within about 1 km of you. Type your stop instead.`);
+        if (!near.length) return fail(t('gps.noneNear', { city: CITIES[draft.city]?.label || '' }));
         const walkMin = (m) => Math.max(1, Math.round((m || 0) / 80)); // ~80 m per minute
         const asStop = (s) => stripUndefined({ name: s.name, tid: s.tid, hafasId: s.hafasId, lat: s.lat, lon: s.lon });
         draft.stops[0] = { stop: asStop(near[0]), walk: walkMin(near[0].distance) };
@@ -1179,16 +1176,16 @@ function useGps() {
         syncSetupForm();
         done();
       } catch (e) {
-        fail(`Couldn't look up stops near you (${e.message}). Type your stop instead.`);
+        fail(t('gps.lookupFailed', { reason: e.message }));
       }
     },
     (err) => {
       const why =
         err.code === 1
-          ? 'Location permission is blocked. Allow it for this site in your browser settings, or type your stop.'
+          ? t('gps.blocked')
           : err.code === 3
-            ? 'Finding your location took too long. Try again outside or type your stop.'
-            : "Your phone couldn't tell where you are. Is location turned on?";
+            ? t('gps.timeout')
+            : t('gps.unknown');
       fail(why);
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
@@ -1411,7 +1408,34 @@ function applyUrlParams() {
   if (p.get('back') === '1') reversed = true;
 }
 
-function init() {
+// ── Language: the saved choice, else the browser's. The footer switches it. ──
+function renderLangSwitch() {
+  const el = $('langSwitch');
+  el.innerHTML = LANGS.map(
+    (l) => `<button type="button" class="lang-btn" data-lang="${l.code}" lang="${l.code}" aria-pressed="${l.code === getLang()}" title="${esc(l.name)}">${esc(l.name)}</button>`,
+  ).join('');
+}
+
+/** Every piece of text that is not redrawn by the next render(). */
+function applyLanguage() {
+  applyStaticText();
+  renderLangSwitch();
+  renderFavs();
+  renderRoute();
+  inkCache.clear();
+  render();
+  if (!$('installCard').hidden) showInstallCard(installMode);
+}
+
+async function chooseLanguage(code) {
+  await setLang(code, true);
+  applyLanguage();
+}
+
+async function init() {
+  await setLang(detectLang(savedLang(), navigator.languages?.length ? navigator.languages : [navigator.language]));
+  applyStaticText();
+  renderLangSwitch();
   document.fonts?.ready.then(() => { inkCache.clear(); render(); });
   applyUrlParams();
   applyTheme();
@@ -1433,6 +1457,10 @@ function init() {
     maybeShowIntro();
   });
   $('introBtn').addEventListener('click', () => showIntro(false));
+  $('langSwitch').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-lang]');
+    if (b && b.dataset.lang !== getLang()) chooseLanguage(b.dataset.lang);
+  });
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
