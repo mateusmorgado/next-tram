@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "tech.morgado.nexttram",
+      "sha256_cert_fingerprints": ["66:E3:91:74:51:55:8C:AF:0C:C7:04:37:6C:74:03:2B:E3:44:00:EE:11:94:7A:84:B6:FB:8B:67:BD:F7:AD:22"]
+    }
+  }
+]

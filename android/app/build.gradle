@@ -1,0 +1,46 @@
+plugins { id 'com.android.application' }
+
+// Signing comes from environment variables (GitHub secrets in CI); nothing secret lives in the repo.
+def ksFile = System.getenv('KEYSTORE_FILE')
+
+android {
+    namespace 'tech.morgado.nexttram'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'tech.morgado.nexttram'
+        minSdk 24
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '1')
+        versionName(System.getenv('VERSION_NAME') ?: '1.0')
+    }
+
+    signingConfigs {
+        release {
+            if (ksFile) {
+                storeFile file(ksFile)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ksFile) signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.0'
+    // androidbrowserhelper pulls an alpha of androidx.browser that needs a newer toolchain; pin the stable one.
+    implementation('androidx.browser:browser') { version { strictly '1.8.0' } }
+}
