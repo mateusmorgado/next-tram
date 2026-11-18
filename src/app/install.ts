@@ -37,6 +37,8 @@ export function hideInstallCard(remember: boolean): void {
 }
 
 export function setupInstall() {
+  // Android phones in a normal browser also get a link to the app version (hidden inside the app and on desktop/iPhone).
+  if (/Android/.test(navigator.userAgent) && !isInstalled()) $('apkLink').hidden = false;
   if (state.installHidden || isInstalled()) return;
   addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
