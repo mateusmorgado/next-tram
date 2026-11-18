@@ -3,6 +3,7 @@
  * Colours come from CSS classes (styles.css, .art-*), so they follow light and dark mode.
  *   s = soft fill   c = card fill   l = line   g = accent (green)   gs = accent stroke   t = text fill
  */
+import { iosArt } from './guide-art-ios.ts';
 
 const phone = (inner: string) => `
   <rect class="c l" x="72" y="6" width="56" height="108" rx="10"/>
@@ -142,5 +143,8 @@ export const ART: Record<string, string> = {
     ${waves(150, 60)}`,
 };
 
-export const art = (key: string): string =>
-  ART[key] ? `<svg class="art" viewBox="0 0 200 120" aria-hidden="true" focusable="false">${ART[key]}</svg>` : '';
+export const art = (key: string): string => {
+  const ios = iosArt(key);
+  if (ios) return `<svg class="art art-ios" viewBox="0 0 240 150" aria-hidden="true" focusable="false">${ios}</svg>`;
+  return ART[key] ? `<svg class="art" viewBox="0 0 200 120" aria-hidden="true" focusable="false">${ART[key]}</svg>` : '';
+};
