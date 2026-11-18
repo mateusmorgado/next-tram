@@ -55,6 +55,12 @@ export function wireHome(): void {
     }
   });
 
+  $('upcomingMore').addEventListener('click', () => {
+    session.upcomingOpen = !session.upcomingOpen;
+    render();
+    capUpcoming();
+  });
+
   $('setupBtn').addEventListener('click', () => openSetup(state.activeId));
   $('themeBtn').addEventListener('click', toggleTheme);
   $('watchBtn').addEventListener('click', () => {
@@ -77,7 +83,7 @@ export function wireHome(): void {
       return;
     }
     if (closest(e, '#countBtn')) {
-      state.countdown = !state.countdown; // big minutes ⇄ live mm:ss timer
+      state.clock = state.clock === 'timer' ? 'minutes' : 'timer'; // live mm:ss timer ⇄ big minutes
       saveState();
       render();
       return;
@@ -107,4 +113,6 @@ export function wireHome(): void {
   });
   window.addEventListener('online', () => refresh());
   window.addEventListener('resize', capUpcoming);
+  // iOS Safari ignores user-scalable=no in the viewport tag, so stop its pinch gesture here.
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
 }
