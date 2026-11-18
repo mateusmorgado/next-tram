@@ -72,6 +72,8 @@
 * { box-sizing: border-box; }
 
 html, body { margin: 0; }
+/* An app, not a page: no pinch or double-tap zoom (scrolling still works). */
+html { touch-action: pan-x pan-y; }
 
 body {
   background: var(--bg);
@@ -435,6 +437,9 @@ html.watch .install-card { display: none; }
 .trip .sub.both { white-space: normal; }
 .trip .in { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; font-size: 14px; }
 .trip.tight .in { color: var(--warn); font-size: 12px; font-weight: 600; }
+.trip-list li[hidden] { display: none; }
+.upcoming .more-btn { display: flex; width: fit-content; margin: 2px auto 0; }
+.upcoming .more-btn[hidden] { display: none; }
 
 /* ── Status bar ── */
 .statusbar { display: flex; justify-content: space-between; align-items: center; color: var(--text-3); font-size: 13px; margin-top: auto; padding-top: 4px; }

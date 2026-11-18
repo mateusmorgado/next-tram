@@ -63,8 +63,6 @@ export default {
   'hero.min': 'min',
   'hero.leaves': 'sai',
   'hero.arrives': 'chega',
-  'hero.getOff': 'desça em {stop} e caminhe {n} min',
-  'hero.nearbyStop': 'uma parada próxima',
   'hero.prev': 'Bonde anterior',
   'hero.next': 'Próximo bonde',
   'minutes.one': '{n} minuto',
@@ -89,6 +87,8 @@ export default {
   'upcoming.walk': '+{n} min a pé',
   'upcoming.arr': 'chega {time}',
   'upcoming.run': 'correr',
+  'upcoming.more': 'Mostrar mais {n}',
+  'upcoming.less': 'Mostrar menos',
 
   // ── Delay words ──
   'delay.early': 'adiantado',
