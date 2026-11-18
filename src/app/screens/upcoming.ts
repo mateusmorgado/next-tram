@@ -1,5 +1,5 @@
 import { delayChip } from '../components/delay-chip.ts';
-import { MAX_UPCOMING } from '../config.ts';
+import { FOLDED_UPCOMING, MAX_UPCOMING } from '../config.ts';
 import type { Connection, Plan } from '../../transit/index.ts';
 import { $, badge, esc, setHtml } from '../dom.ts';
 import { activeRoute, session } from '../store.ts';
@@ -17,8 +17,9 @@ export function renderUpcoming(plan: Plan, now: number): void {
   const wasHidden = section.hidden;
   section.hidden = false;
   const multi = routeOptions(activeRoute(), session.reversed).length > 1;
-  const html = upcomingRows(reachable)
-    .map((group) => {
+  const rows = upcomingRows(reachable);
+  const html = rows
+    .map((group, i) => {
       const c = group[0];
       const tight = c.depMs - now < c.walk * 60000;
       const heroId = plan.hero?.id;
@@ -36,7 +37,8 @@ export function renderUpcoming(plan: Plan, now: number): void {
               .join(' · ');
       const d = c.realtime ? delayLabel(c.delayMin) : null;
       const chip = d && d.key !== 'ontime' ? delayChip(c.delayMin, 'sm') : '';
-      return `<li><button class="trip ${tight ? 'tight' : ''} ${selected ? 'selected' : ''}" type="button" data-trip="${esc(c.id)}">
+      const folded = !session.upcomingOpen && i >= FOLDED_UPCOMING;
+      return `<li${folded ? ' hidden' : ''}><button class="trip ${tight ? 'tight' : ''} ${selected ? 'selected' : ''}" type="button" data-trip="${esc(c.id)}">
         <span class="t">${formatClock(c.depMs)}</span>
         ${badge(c)}
         <span class="info"><span class="dir" title="${esc(c.direction)}">${esc(shortDirection(c.direction))}</span><span class="sub${group.length > 1 ? ' both' : ''}">${chip}${esc(sub)}</span></span>
@@ -44,6 +46,12 @@ export function renderUpcoming(plan: Plan, now: number): void {
       </button></li>`;
     })
     .join('');
+  const more = $('upcomingMore');
+  const extra = rows.length - FOLDED_UPCOMING;
+  more.hidden = extra <= 0;
+  more.setAttribute('aria-expanded', String(session.upcomingOpen));
+  const label = session.upcomingOpen ? t('upcoming.less') : t('upcoming.more', { n: extra });
+  if (more.textContent !== label) more.textContent = label;
   if (setHtml($('tripList'), html) || wasHidden) capUpcoming();
 }
 
@@ -58,11 +66,11 @@ export function upcomingRows(list: Connection[]): Connection[][] {
   return [...rows.values()];
 }
 
-/** Cap the list at 7 visible rows; the rest scrolls inside it. */
+/** Opened up, the list shows at most 7 rows; the rest scrolls inside it. */
 export function capUpcoming() {
   const list = $('tripList');
   const rows = list.children;
-  if (rows.length <= MAX_UPCOMING) {
+  if (!session.upcomingOpen || rows.length <= MAX_UPCOMING) {
     list.style.maxHeight = '';
     list.classList.remove('scrolls');
     return;

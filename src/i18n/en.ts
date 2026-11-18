@@ -64,8 +64,6 @@ export default {
   'hero.min': 'min',
   'hero.leaves': 'leaves',
   'hero.arrives': 'arrives',
-  'hero.getOff': 'get off at {stop}, then {n} min walk',
-  'hero.nearbyStop': 'a nearby stop',
   'hero.prev': 'Earlier tram',
   'hero.next': 'Next tram',
   'minutes.one': '{n} minute',
@@ -90,6 +88,8 @@ export default {
   'upcoming.walk': '+{n} min walk',
   'upcoming.arr': 'arr {time}',
   'upcoming.run': 'run',
+  'upcoming.more': 'Show {n} more',
+  'upcoming.less': 'Show less',
 
   // ── Delay words ──
   'delay.early': 'early',

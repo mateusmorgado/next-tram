@@ -35,6 +35,8 @@ export const session = {
   lastPlan: null as Plan | null,
   /** A swipe just ended, so the click that follows it must be ignored. */
   swiped: false,
+  /** The Upcoming list is opened past its first rows. */
+  upcomingOpen: false,
 };
 
 export function clone<T>(v: T): T {
@@ -71,7 +73,8 @@ function loadState(): AppState {
     mark,
     buffer,
     run,
-    countdown: Boolean(saved.countdown),
+    // The old `countdown` flag is ignored on purpose: the seconds countdown is now everyone's default.
+    clock: saved.clock === 'minutes' ? 'minutes' : 'timer',
     defaults: DEFAULTS_VERSION,
     syncCode: isValidCode(saved.syncCode) ? saved.syncCode : newCode(),
     synced: saved.synced || '',

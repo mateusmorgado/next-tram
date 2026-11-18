@@ -65,9 +65,9 @@ export function renderHero(plan: Plan, now: number, slots: number): void {
       <div class="hero-stop">${place}</div>
       <div class="hero-line">${badge(c, 'lg')}<span class="dir" title="${esc(c.direction)}">→ ${esc(shortDirection(c.direction))}</span></div>
       <div class="hero-count">
-        <button type="button" class="count ${state.countdown ? 'timer' : ''}" id="countBtn" aria-label="${esc(t('hero.countAria', { minutes: tn('minutes', mins) }))}">
+        <button type="button" class="count ${state.clock === 'timer' ? 'timer' : ''}" id="countBtn" aria-label="${esc(t('hero.countAria', { minutes: tn('minutes', mins) }))}">
           ${
-            state.countdown
+            state.clock === 'timer'
               ? `<span class="count-num"><span class="timer-text" data-tick="clock"></span></span><span class="count-unit" aria-hidden="true">&#8203;</span>`
               : `<span class="count-num">${mins}</span><span class="count-unit">${esc(t('hero.min'))}</span>`
           }
@@ -75,7 +75,6 @@ export function renderHero(plan: Plan, now: number, slots: number): void {
         <div class="times">
           <div>${esc(t('hero.leaves'))} <b>${formatClock(c.depMs)}</b> ${delay}</div>
           ${c.arrMs ? `<div>${esc(t('hero.arrives'))} <b>${formatClock(c.arrMs)}</b>${c.transfers ? ` · ${changeText(c)}` : ''}</div>` : ''}
-          ${c.walkAfterMin ? `<div class="walk-after">${esc(t('hero.getOff', { stop: c.getOffAt || t('hero.nearbyStop'), n: c.walkAfterMin }))}</div>` : ''}
         </div>
       </div>
     </div>

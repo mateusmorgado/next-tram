@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>NextTram</title>
   <meta name="description" content="When can I actually catch the next tram? Live departures for Leipzig and Berlin." data-i18n-attr="content:meta.description" />
   <meta name="theme-color" content="#f4f2ee" media="(prefers-color-scheme: light)" />
@@ -110,6 +110,7 @@
       <section class="upcoming" id="upcomingSection" hidden>
         <h2 class="section-title"><span class="st-main" data-i18n="upcoming.title">Upcoming</span> <span data-i18n="upcoming.hint">tap one to track it</span></h2>
         <ol class="trip-list" id="tripList"></ol>
+        <button class="text-btn more-btn" id="upcomingMore" type="button" aria-controls="tripList" hidden></button>
       </section>
     </main>
 
@@ -124,6 +125,7 @@
       <button class="promo-link" id="introBtn" type="button" data-i18n="footer.how">How it works</button>
       <a class="promo-link ext" id="apkLink" href="https://github.com/mateusmorgado/next-tram/releases/download/android-latest/NextTram.apk" rel="noopener" data-i18n="footer.apk" hidden>Android app (APK)</a>
       <a class="promo-link ext" href="https://nexttram.morgado.tech" target="_blank" rel="noopener" data-i18n="footer.about">About NextTram</a>
+      <a class="promo-link ext" href="https://github.com/mateusmorgado/next-tram" target="_blank" rel="noopener">GitHub</a>
     </div>
     <div class="lang-switch" id="langSwitch" role="group" aria-label="Language" data-i18n-attr="aria-label:lang.label">
     </div>

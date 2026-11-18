@@ -16,8 +16,8 @@ export interface AppState {
   buffer: number;
   /** Running for a tram is allowed (all routes). */
   run: boolean;
-  /** Show mm:ss instead of whole minutes. */
-  countdown: boolean;
+  /** Big clock on the card: live mm:ss countdown (default) or whole minutes. */
+  clock: 'timer' | 'minutes';
   /** Version of the built-in routes the saved favorites were last updated to. */
   defaults: number;
   /** The personal code that favorites are synced under. */

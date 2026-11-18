@@ -16,9 +16,11 @@ export function renderCompare(plan: Plan, now: number, slots: number): void {
     .map((p) => {
       const o = options[p.slot];
       const name = session.reversed ? shortStopName(o.to.name) : shortStopName(o.from.name);
-      const isBest = plan.hero && plan.hero.slot === p.slot && !plan.manual;
+      // The green frame follows the tram shown above, also when you picked the other stop yourself.
+      const shown = plan.hero?.slot === p.slot;
+      const isBest = shown && !plan.manual;
       const n = p.next;
-      return `<button class="stop-card ${isBest ? 'best' : ''}" type="button" ${n ? `data-trip="${esc(n.id)}"` : 'disabled'}>
+      return `<button class="stop-card ${shown ? 'best' : ''}" type="button" ${n ? `data-trip="${esc(n.id)}"` : 'disabled'}>
         <div class="meta"><span>${esc(session.reversed ? t('compare.getOff') : t('compare.stop', { n: p.slot + 1, walk: formatWalk(o.walkBase) }))}</span>${isBest ? `<span class="best-tag">${esc(t('compare.best'))}</span>` : ''}</div>
         <div class="name">${esc(name)}</div>
         ${
