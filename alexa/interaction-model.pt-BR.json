@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "next tram",
+      "invocationName": "hora do bonde",
       "intents": [
         {
           "name": "NextTramIntent",
@@ -17,8 +17,6 @@
             "quando chega o próximo bonde",
             "quando sai o meu bonde",
             "próximo bonde",
-            "próximo tram",
-            "quando sai o próximo tram",
             "quando eu preciso sair",
             "quando tenho que sair",
             "que horas eu saio",
