@@ -43,14 +43,14 @@ const PALETTES = {
   light: {
     ground: 0xe2ded5, plate: 0xefece6, roof: 0xfdfcf9, wall: 0xd6d0c5, edge: 0x9f988a, edgeAlpha: 0.35,
     park: 0xcfe2cb, tree: 0x79b088, trunk: 0x9c8f7c, platform: 0xbdb7ab, rail: 0x12805c, railGlow: 0.14,
-    walk: 0x2563eb, maps: 0xd93a3a, home: 0x2563eb, tram: 0xd7262f, tramRoof: 0xf4f2ee, glass: 0x23262d,
+    walk: 0x2563eb, maps: 0xd93a3a, home: 0x2563eb, tram: 0xf2c200, tramSkirt: 0x3a3d45, tramRoof: 0xdcb200, glass: 0x23262d,
     win: 'rgba(120, 124, 135, 0.34)', winLit: 'rgba(255, 255, 255, 0.55)', facade: '#d6d0c5',
     ambient: 1.5, hemi: 1.0, sun: 2.3, exposure: 1.0,
   },
   dark: {
     ground: 0x14161b, plate: 0x1b1e25, roof: 0x2f3442, wall: 0x232733, edge: 0x76829a, edgeAlpha: 0.28,
     park: 0x1a3029, tree: 0x2f6b55, trunk: 0x3a3f4b, platform: 0x3a3f4b, rail: 0x3ecf8e, railGlow: 0.2,
-    walk: 0x7aa7ff, maps: 0xff6b5f, home: 0x7aa7ff, tram: 0xe2434b, tramRoof: 0xd9dbe2, glass: 0x0c0d10,
+    walk: 0x7aa7ff, maps: 0xff6b5f, home: 0x7aa7ff, tram: 0xe0b100, tramSkirt: 0x2a2d35, tramRoof: 0xc29c00, glass: 0x0c0d10,
     win: 'rgba(10, 14, 23, 0.55)', winLit: 'rgba(255, 221, 150, 0.6)', facade: '#232733',
     ambient: 1.3, hemi: 0.9, sun: 2.0, exposure: 1.1,
   },
@@ -304,18 +304,56 @@ export function createScene(host: HTMLElement, opts: SceneOptions = {}) {
   sign.position.set(WALK_X + 0.2, 3.4, STOP_Z - 2.2);
   city.add(sign);
 
-  // ── Tram ──
+  // ── Tram: a yellow Berlin low-floor tram, four sections, cabs at both ends ──
   const tram = new THREE.Group();
-  const body = new THREE.Mesh(keep(new THREE.BoxGeometry(1.7, 1.5, 7)), mat(P.tram, { roughness: 0.5 }));
-  body.position.y = 1.05;
-  body.castShadow = true;
-  const windows = new THREE.Mesh(keep(new THREE.BoxGeometry(1.74, 0.5, 6.2)), mat(P.glass, { roughness: 0.2, metalness: 0.4 }));
-  windows.position.y = 1.35;
-  const top = new THREE.Mesh(keep(new THREE.BoxGeometry(1.5, 0.14, 6.6)), mat(P.tramRoof));
-  top.position.y = 1.87;
-  const lamp = new THREE.Mesh(keep(new THREE.BoxGeometry(1.1, 0.16, 0.06)), keep(new THREE.MeshBasicMaterial({ color: 0xfff3c4 })));
-  lamp.position.set(0, 0.62, -3.52);
-  tram.add(body, windows, top, lamp);
+  const yellow = mat(P.tram, { roughness: 0.45 });
+  const skirtMat = mat(P.tramSkirt, { roughness: 0.6 });
+  const glassMat = mat(P.glass, { roughness: 0.15, metalness: 0.5 });
+  const roofTop = mat(P.tramRoof, { roughness: 0.6 });
+  const gear = mat(0x5b6069, { roughness: 0.5, metalness: 0.4 });
+  const glowMat = (color: number) => keep(new THREE.MeshBasicMaterial({ color }));
+  const box = (w: number, h: number, l: number, m: THREE.Material, x: number, y: number, z: number, shadow = false) => {
+    const mesh = new THREE.Mesh(keep(new THREE.BoxGeometry(w, h, l)), m);
+    mesh.position.set(x, y, z);
+    mesh.castShadow = shadow;
+    tram.add(mesh);
+    return mesh;
+  };
+  const W = 1.6;
+  const SECTIONS = [2.3, 1.75, 1.75, 2.3];
+  const JOINT = 0.14;
+  const LEN = SECTIONS.reduce((a, b) => a + b, 0) + JOINT * (SECTIONS.length - 1);
+  let z0 = -LEN / 2;
+  SECTIONS.forEach((len, i) => {
+    const zc = z0 + len / 2;
+    box(W, 1.2, len, yellow, 0, 1.13, zc, true); // body
+    box(W + 0.02, 0.3, len, skirtMat, 0, 0.4, zc); // dark skirt
+    box(W + 0.04, 0.5, len - 0.3, glassMat, 0, 1.33, zc); // window band
+    box(W + 0.03, 0.95, 0.5, glassMat, 0, 1.0, zc + (i % 2 ? 0.35 : -0.35) * (i < 2 ? 1 : -1)); // glass door
+    box(W - 0.2, 0.1, len - 0.1, roofTop, 0, 1.78, zc); // roof
+    if (i === 0 || i === 3) box(0.9, 0.22, 1.1, gear, 0, 1.94, zc); // roof equipment
+    if (i < SECTIONS.length - 1) box(W - 0.2, 1.25, JOINT, skirtMat, 0, 1.05, z0 + len + JOINT / 2); // bellows
+    z0 += len + JOINT;
+  });
+  // Pantograph on the second section.
+  const pzc = -LEN / 2 + SECTIONS[0] + JOINT + SECTIONS[1] / 2;
+  box(0.7, 0.1, 0.7, gear, 0, 1.88, pzc);
+  const armA = box(0.06, 0.06, 0.95, gear, 0, 2.18, pzc - 0.2);
+  armA.rotation.x = -0.75;
+  const armB = box(0.06, 0.06, 0.95, gear, 0, 2.56, pzc + 0.12);
+  armB.rotation.x = 0.75;
+  box(1.0, 0.05, 0.08, gear, 0, 2.86, pzc - 0.05);
+  // Cab ends: sloped nose with a big windscreen, orange destination display, lights.
+  [-1, 1].forEach((dir) => {
+    const end = (LEN / 2) * dir;
+    const nose = box(W - 0.06, 1.15, 0.3, yellow, 0, 1.0, end + 0.13 * dir, true);
+    nose.rotation.x = 0.12 * dir;
+    box(W - 0.16, 0.7, 0.05, glassMat, 0, 1.28, end + 0.27 * dir).rotation.x = 0.16 * dir; // windscreen
+    box(0.9, 0.12, 0.04, glowMat(0xff9a1f), 0, 1.68, end + 0.17 * dir); // destination display
+    box(W - 0.06, 0.3, 0.3, skirtMat, 0, 0.4, end + 0.13 * dir); // skirt under the nose
+    const light = dir < 0 ? 0xfff3c4 : 0xff3b30; // headlights at the front (north), tail lights behind
+    [-0.55, 0.55].forEach((x) => box(0.24, 0.1, 0.05, glowMat(light), x, 0.66, end + 0.29 * dir));
+  });
   tram.position.set(RAIL_X, 0, 60);
   city.add(tram);
 
