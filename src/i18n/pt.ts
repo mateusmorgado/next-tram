@@ -16,6 +16,7 @@ export default {
   'header.setup': 'Editar paradas',
   'footer.how': 'Como funciona',
   'footer.about': 'Sobre o NextTram',
+  'footer.apk': 'App Android (APK)',
   'status.refresh': 'Atualizar',
   'favs.label': 'Trajetos favoritos',
   'favs.new': '+ Novo',

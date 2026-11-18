@@ -16,6 +16,7 @@ export default {
   'header.setup': 'Haltestellen bearbeiten',
   'footer.how': 'So funktioniert’s',
   'footer.about': 'Über NextTram',
+  'footer.apk': 'Android-App (APK)',
   'status.refresh': 'Aktualisieren',
   'favs.label': 'Lieblingsstrecken',
   'favs.new': '+ Neu',
