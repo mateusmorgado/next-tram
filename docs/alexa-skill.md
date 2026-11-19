@@ -35,7 +35,7 @@ Without connecting, the skill answers for the built-in first route (Leipzig Hbf)
    - German: `alexa/interaction-model.de-DE.json`
 3. **Save**, then **Build skill**. Wait for “Build successful”.
 
-The invocation name comes with the JSON: `next tram` (English) and `next tram` (German too).
+The invocation name comes with the JSON: `next tram` (English and German), `hora do bonde` (Portuguese, since Amazon rejected "next tram" there).
 
 ## 3. Endpoint
 

@@ -67,7 +67,8 @@ for (const code of ['en', 'de', 'pt']) {
   test(`${code}: Alexa phrases use the real invocation name and sample utterances`, () => {
     const { invocation, samples } = model(code);
     const d = LANG[code];
-    assert.equal(invocation, 'next tram');
+    const expected = code === 'pt' ? 'hora do bonde' : 'next tram';
+    assert.equal(invocation, expected);
     // "open next tram" style phrases name the skill; "ask next tram <sample>" phrases end in a real sample.
     for (const key of ['voice.alexaOpen', 'voice.alexaOpenShort']) assert.ok(norm(d[key]).endsWith(invocation), `${code} ${key}`);
     for (const key of ['voice.alexaAsk', 'voice.alexaHome', 'voice.alexaPair', 'voice.alexaNewCode']) {
