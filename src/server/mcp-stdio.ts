@@ -5,7 +5,7 @@
  *
  * Tools (lib/mcp-tools.js):
  *   get_next_tram  – when to leave, which stop to walk to, and which tram to take
- *   search_stops   – find stop names in Leipzig or Berlin
+ *   search_stops   – find stop names in Leipzig, Berlin or Altenburg
  *   list_routes    – the user's favorite routes
  *
  * Claude Desktop / Claude Code config:

@@ -17,7 +17,7 @@ import {
   needsRun,
   formatWalk,
 } from '../src/transit/index.ts';
-import { DEFAULT_ROUTES } from '../src/data/stops.ts';
+import { CITIES, DEFAULT_ROUTES, PRESET_ROUTES } from '../src/data/stops.ts';
 
 const T0 = Date.parse('2026-11-11T16:00:00Z'); // 17:00 in Leipzig
 const iso = (min) => new Date(T0 + min * 60000).toISOString();
@@ -46,6 +46,27 @@ const motisLeg = (over) => ({
   headsign: 'Böhlitz-Ehrenberg',
   tripId: 'trip-7a',
   ...over,
+});
+
+test('Altenburg: short names, link preset, and nearby towns left out of search', async () => {
+  assert.equal(shortStopName('Altenburg (Thür.), Porphyrstr.'), 'Porphyrstr.');
+  const preset = PRESET_ROUTES.find((r) => r.id === 'abg-busbahnhof');
+  assert.ok(preset && CITIES[preset.city]);
+  assert.equal(preset.stops[0].walk, 6);
+  const seen: string[] = [];
+  const fetchImpl = (async (url: string) => {
+    seen.push(String(url));
+    const body = String(url).includes('transitous')
+      ? [
+          { type: 'STOP', name: 'Altenburg (Thür.), Porphyrstr.', id: 'a', lat: 51.0079, lon: 12.4559 },
+          { type: 'STOP', name: 'Gera, Porphyrstr.', id: 'g', lat: 50.8827, lon: 12.0781 },
+        ]
+      : [];
+    return { ok: true, status: 200, json: async () => body };
+  }) as unknown as typeof fetch;
+  const found = await createTransitClient({ fetchImpl }).searchStops('altenburg', 'Porphyrstr.');
+  assert.deepEqual(found.map((s) => s.name), ['Porphyrstr.']);
+  assert.ok(seen.some((u) => decodeURIComponent(u.replace(/\+/g, ' ')).includes('Altenburg (Thür.), Porphyrstraße')));
 });
 
 test('parseMotisPlan keeps only legs boarding at the chosen stop', () => {

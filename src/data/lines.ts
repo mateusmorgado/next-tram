@@ -26,6 +26,8 @@ export const LINE_COLORS: Record<CityKey, Partial<Record<Product, Table>>> = {
     },
     bus: {},
   },
+  // Altenburger Land buses: the colours the feed sends are used.
+  altenburg: {},
   berlin: {
     subway: {
       U1: { bg: '#7DAD4C' },

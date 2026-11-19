@@ -26,6 +26,7 @@ export function expandStreetName(value?: unknown): string {
 /** "Leipzig, Edlichstraße" / "Edlichstraße, Leipzig" / "U Eberswalder Str. (Berlin)" → short display name. */
 export function shortStopName(value?: unknown): string {
   return String(value || '')
+    .replace(/^Altenburg \(Thür\.?\)[,\s]+/i, '')
     .replace(/^(Leipzig|Berlin)[,\s]+/i, '')
     .replace(/,\s*(Leipzig|Berlin)$/i, '')
     .replace(/\s*\((Leipzig|Berlin)\)$/i, '')
