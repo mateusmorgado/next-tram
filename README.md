@@ -14,7 +14,7 @@
 
 **"When is the next tram?"** answered with zero friction: which of your nearby stops to walk to, which tram you can still catch, and when to leave the house.
 
-Live departures for **Leipzig (LVB / MDV)** and **Berlin (BVG / VBB)**. No backend, no database, no API keys. It comes as:
+Live departures for **Leipzig (LVB / MDV)**, **Berlin (BVG / VBB)** and **Altenburg, Thüringen (THÜSAC buses)**. A link can add a ready-made route: `?add=abg-busbahnhof&lang=de` (see `PRESET_ROUTES` in [`src/data/stops.ts`](src/data/stops.ts)). No backend, no database, no API keys. It comes as:
 
 - an installable **PWA** for Android phones and Wear OS watches,
 - an **MCP server** so Claude (or any MCP client) can answer "next tram",

@@ -1,6 +1,6 @@
 /** Shared types of the transit core. */
 
-export type CityKey = 'leipzig' | 'berlin';
+export type CityKey = 'leipzig' | 'berlin' | 'altenburg';
 export type Lang = 'en' | 'de' | 'pt';
 /** Which vehicles count: trams only, trams and buses, or everything. */
 export type ModeFilter = 'tram' | 'tram_bus' | 'all';

@@ -42,7 +42,7 @@ export const TOOLS: ToolDefinition[] = [
   },
   {
     name: 'search_stops',
-    description: 'Search public transport stops by name in Leipzig or Berlin.',
+    description: 'Search public transport stops by name in Leipzig, Berlin or Altenburg (Thür.).',
     inputSchema: {
       type: 'object',
       properties: {

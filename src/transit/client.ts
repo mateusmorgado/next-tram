@@ -23,6 +23,7 @@ export interface EngineResult {
 
 const HAFAS_PRODUCTS: Record<string, string[]> = {
   berlin: ['suburban', 'subway', 'tram', 'bus', 'ferry', 'express', 'regional'],
+  altenburg: ['nationalExpress', 'national', 'regionalExpress', 'regional', 'suburban', 'bus', 'ferry', 'subway', 'tram', 'taxi'],
   leipzig: ['nationalExpress', 'national', 'regionalExpress', 'regional', 'suburban', 'bus', 'ferry', 'subway', 'tram', 'taxi'],
 };
 
@@ -64,7 +65,8 @@ export function createTransitClient({ fetchImpl, timeoutMs = 12000, userAgent }:
 
   function withCity(city: City, query: string): string {
     const q = expandStreetName(query);
-    return new RegExp(`\\b${city.searchPrefix}\\b`, 'i').test(q) ? q : `${city.searchPrefix}, ${q}`;
+    const town = city.searchPrefix.split(/[\s,(]/)[0]; // "Altenburg (Thür.)" → "Altenburg"
+    return new RegExp(`\\b${town}\\b`, 'i').test(q) ? q : `${city.searchPrefix}, ${q}`;
   }
 
   // ── Stop search ──
@@ -75,7 +77,7 @@ export function createTransitClient({ fetchImpl, timeoutMs = 12000, userAgent }:
     const items = await getJson(`${TRANSITOUS_BASE}/api/v1/geocode?${params}`);
     return (Array.isArray(items) ? items : [])
       .filter((i: Json) => i.type === 'STOP')
-      .filter((i: Json) => distanceKm(i, city.center) < 35)
+      .filter((i: Json) => distanceKm(i, city.center) < (city.radiusKm ?? 35))
       .map((i: Json) => ({ name: shortStopName(i.name), tid: i.id, lat: i.lat, lon: i.lon }));
   }
 
@@ -97,7 +99,7 @@ export function createTransitClient({ fetchImpl, timeoutMs = 12000, userAgent }:
         lat: i.location?.latitude,
         lon: i.location?.longitude,
       }))
-      .filter((s: Stop) => distanceKm(s, city.center) < 35);
+      .filter((s: Stop) => distanceKm(s, city.center) < (city.radiusKm ?? 35));
   }
 
   /** Autocomplete: both engines in parallel, merged by name, primary engine first. */

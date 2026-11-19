@@ -59,7 +59,7 @@ export function sanitizeRoutes(routes: unknown): Route[] {
       const out: Route = {
         id: str(r.id, 40) || 'route',
         label: str(r.label, 24) || '',
-        city: r.city === 'berlin' ? 'berlin' : 'leipzig',
+        city: r.city === 'berlin' || r.city === 'altenburg' ? r.city : 'leipzig',
         stops,
         dest,
       };
