@@ -39,6 +39,7 @@ export const CITIES: Record<CityKey, City> = {
     searchPrefix: 'Berlin',
     center: { lat: 52.52, lon: 13.405 },
   },
+  // TEMPORARY (Altenburg job demo): remove after 2026-12-19. To remove: delete the `altenburg` city, the abg* stops and the abg-busbahnhof preset here, 'altenburg' in CityKey (src/transit/types.ts), LINE_COLORS/HAFAS_PRODUCTS entries, the citySeg button in public/index.html and the Altenburg test. The ?add= mechanism itself can stay.
   altenburg: {
     key: 'altenburg',
     label: 'Altenburg',
@@ -61,6 +62,7 @@ export const STOPS: Record<string, Stop> = {
   warschauer: { name: 'S+U Warschauer Str.', query: 'S+U Warschauer Str. (Berlin)', hafasId: '900120004', lat: 52.5058, lon: 13.4491 },
   strassmann: { name: 'Straßmannstr.', query: 'Straßmannstr. (Berlin)', lat: 52.5195, lon: 13.4567 },
   eberswalder: { name: 'U Eberswalder Str.', query: 'U Eberswalder Str. (Berlin)', hafasId: '900110006', lat: 52.5413, lon: 13.4123 },
+  // TEMPORARY (Altenburg job demo): remove after 2026-12-19, see CITIES.altenburg.
   // Porphyrstr. has one platform (buses towards Windischleuba/Frohburg and the 505 loop).
   abgPorphyr: { name: 'Porphyrstr.', query: 'Altenburg (Thür.), Porphyrstr.', tid: 'de-DELFI_de:16077:30961::06', lat: 51.00786, lon: 12.4559 },
   // Altenburg's bus station is the bus terminal at the railway station; the timetable calls it "Bahnhof (Bus)".
@@ -97,6 +99,7 @@ export const DEFAULT_ROUTES: Route[] = [
  * They are not built in; the link adds one to the visitor's favorites and opens it.
  */
 export const PRESET_ROUTES: Route[] = [
+  // TEMPORARY (Altenburg job demo): remove after 2026-12-19, see CITIES.altenburg.
   {
     id: 'abg-busbahnhof',
     label: 'Busbahnhof',
