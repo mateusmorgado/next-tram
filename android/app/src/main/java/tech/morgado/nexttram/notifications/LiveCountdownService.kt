@@ -209,7 +209,7 @@ class LiveCountdownService : Service() {
                 .setShortCriticalText(shortChip)
                 .setStyle(style)
                 .addAction(stopAction)
-            builder.extras.putBoolean(Notification.EXTRA_REQUEST_PROMOTED_ONGOING, true)
+            builder.extras.putBoolean("android.requestPromotedOngoing", true)
             return builder.build()
         }
 

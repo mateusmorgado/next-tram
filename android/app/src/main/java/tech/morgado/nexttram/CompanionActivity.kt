@@ -67,10 +67,9 @@ class CompanionActivity : AppCompatActivity() {
         }
     }
 
-    private fun buildUi(): View {
-        val dp = resources.displayMetrics.density
-        fun px(v: Int) = (v * dp).toInt()
+    private fun px(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
+    private fun buildUi(): View {
         val scroll = ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#101114"))
             isFillViewport = true
@@ -103,7 +102,7 @@ class CompanionActivity : AppCompatActivity() {
         root.addView(headerRow)
 
         // 1. Live Departures & Lock-Screen Live Updates Card
-        val liveCard = card(px)
+        val liveCard = card()
         liveCard.addView(sectionLabel("LIVE DEPARTURES & LOCK-SCREEN TRACKER"))
         routeTitleText = text(store.activeRoute().displayName(previewReversed), 17f, Color.WHITE, bold = true)
         liveCard.addView(routeTitleText)
@@ -158,7 +157,7 @@ class CompanionActivity : AppCompatActivity() {
         root.addView(liveCard)
 
         // 2. Favorites Sync Card
-        val syncCard = card(px)
+        val syncCard = card()
         syncCard.addView(sectionLabel("SYNC FAVORITES FROM PWA"))
         syncCard.addView(
             text(
@@ -185,7 +184,7 @@ class CompanionActivity : AppCompatActivity() {
         root.addView(syncCard)
 
         // 3. Smart Alerts & Location Card
-        val featuresCard = card(px)
+        val featuresCard = card()
         featuresCard.addView(sectionLabel("SMART ALERTS & LOCATION"))
 
         switchLeaveNow = toggleRow(
@@ -193,7 +192,6 @@ class CompanionActivity : AppCompatActivity() {
             "“Leave now” notifications",
             "Alerts when it's time to walk or run for your tram",
             store.leaveNowEnabled,
-            px,
         ) { checked ->
             if (checked) {
                 ensureNotificationPermission {
@@ -210,7 +208,6 @@ class CompanionActivity : AppCompatActivity() {
             "Delay alerts",
             "Background check warns when your tram is 3+ min late",
             store.delayAlertsEnabled,
-            px,
         ) { checked ->
             if (checked) {
                 ensureNotificationPermission {
@@ -227,7 +224,6 @@ class CompanionActivity : AppCompatActivity() {
             "Location-aware stops",
             "Automatically opens the nearest favorite stop (or way home)",
             store.locationAutoSwitch,
-            px,
         ) { checked ->
             if (checked) {
                 ensureLocationPermission {
@@ -244,7 +240,6 @@ class CompanionActivity : AppCompatActivity() {
             "Auto-check APK updates",
             "Checks GitHub android-latest release in the background",
             store.autoUpdateEnabled,
-            px,
         ) { checked ->
             store.autoUpdateEnabled = checked
             if (checked) AlertWorker.ensureScheduled(this)
@@ -252,7 +247,7 @@ class CompanionActivity : AppCompatActivity() {
         root.addView(featuresCard)
 
         // 4. App Updates Card
-        val updateCard = card(px)
+        val updateCard = card()
         updateCard.addView(sectionLabel("APP UPDATES"))
         updateStatusText = text("Installed build: ${BuildConfig.VERSION_NAME} (${BuildConfig.GIT_SHA.take(7)})", 13f, Color.parseColor("#C4C9D4")).apply {
             setPadding(0, px(4), 0, px(10))
@@ -262,7 +257,7 @@ class CompanionActivity : AppCompatActivity() {
         root.addView(updateCard)
 
         // 5. Quick Tips Card
-        val tipsCard = card(px)
+        val tipsCard = card()
         tipsCard.addView(sectionLabel("SHORTCUTS, WIDGET, ASSISTANT & WATCH"))
         tipsCard.addView(
             text(
@@ -301,8 +296,8 @@ class CompanionActivity : AppCompatActivity() {
             try {
                 val plan = TransitApi.fetchPlan(route, previewReversed)
                 val nowMs = System.currentTimeMillis()
-                val textOut = if (plan.hero != null) {
-                    val h = plan.hero
+                val h = plan.hero
+                val textOut = if (h != null) {
                     val depMins = Catching.minutesUntilDeparture(h, nowMs)
                     val delay = if (h.delayMin >= 1) " (+${h.delayMin} min late)" else ""
                     val nextStr = plan.upcoming.filter { it.tripKey != h.tripKey }.take(2).joinToString(" · ") {
@@ -360,7 +355,8 @@ class CompanionActivity : AppCompatActivity() {
         updateStatusText.text = "Checking GitHub android-latest…"
         executor.execute {
             val release = TransitApi.fetchLatestRelease()
-            if (release == null || release.apkUrl.isNullOrBlank()) {
+            val apkUrl = release?.apkUrl
+            if (release == null || apkUrl.isNullOrBlank()) {
                 runOnUiThread { updateStatusText.text = "Could not reach GitHub releases." }
                 return@execute
             }
@@ -371,7 +367,7 @@ class CompanionActivity : AppCompatActivity() {
                 return@execute
             }
             runOnUiThread { updateStatusText.text = "New build found — downloading NextTram.apk…" }
-            val file = AppUpdater.downloadApk(this, release.apkUrl) { pct ->
+            val file = AppUpdater.downloadApk(this, apkUrl) { pct ->
                 runOnUiThread { updateStatusText.text = "Downloading NextTram.apk… $pct%" }
             }
             runOnUiThread {
@@ -441,7 +437,7 @@ class CompanionActivity : AppCompatActivity() {
         }
     }
 
-    private fun card(px: (Int) -> Int): LinearLayout = LinearLayout(this).apply {
+    private fun card(): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         background = roundedBox("#181B22", "#262B38", px(16))
         setPadding(px(16), px(14), px(16), px(14))
@@ -483,7 +479,6 @@ class CompanionActivity : AppCompatActivity() {
         title: String,
         subtitle: String,
         initial: Boolean,
-        px: (Int) -> Int,
         onToggle: (Boolean) -> Unit,
     ): Switch {
         val row = LinearLayout(this).apply {

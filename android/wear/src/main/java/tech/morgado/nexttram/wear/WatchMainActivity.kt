@@ -38,10 +38,9 @@ class WatchMainActivity : Activity() {
         loadDepartures()
     }
 
-    private fun buildWatchUi(): View {
-        val dp = resources.displayMetrics.density
-        fun px(v: Int) = (v * dp).toInt()
+    private fun px(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
+    private fun buildWatchUi(): View {
         val scroll = ScrollView(this).apply {
             setBackgroundColor(Color.parseColor("#101114"))
             isFillViewport = true
@@ -108,12 +107,12 @@ class WatchMainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        btnRow.addView(watchBtn("Flip", "#232734", px) {
+        btnRow.addView(watchBtn("Flip", "#232734") {
             reversed = !reversed
             loadDepartures()
         })
         btnRow.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(px(6), 1) })
-        btnRow.addView(watchBtn("Refresh", "#213A8F", px) {
+        btnRow.addView(watchBtn("Refresh", "#213A8F") {
             loadDepartures()
         })
         col.addView(btnRow)
@@ -133,7 +132,7 @@ class WatchMainActivity : Activity() {
             ).apply { topMargin = px(12) }
         }
         col.addView(syncInput)
-        col.addView(watchBtn("Sync Code", "#65B32E", px) {
+        col.addView(watchBtn("Sync Code", "#65B32E") {
             val clean = TransitApi.normalizeCode(syncInput.text.toString())
             if (TransitApi.isValidCode(clean)) {
                 statusView.text = "Syncing…"
@@ -205,7 +204,7 @@ class WatchMainActivity : Activity() {
         }
     }
 
-    private fun watchBtn(label: String, bgHex: String, px: (Int) -> Int, onClick: () -> Unit): Button =
+    private fun watchBtn(label: String, bgHex: String, onClick: () -> Unit): Button =
         Button(this).apply {
             text = label
             isAllCaps = false
