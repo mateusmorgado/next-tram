@@ -9,12 +9,14 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Build
+import android.os.PowerManager
 import android.widget.RemoteViews
 import tech.morgado.nexttram.CompanionActivity
 import tech.morgado.nexttram.LauncherActivity
 import tech.morgado.nexttram.R
 import tech.morgado.nexttram.assistant.AssistantRouter
 import tech.morgado.nexttram.location.LocationHelper
+import tech.morgado.nexttram.notifications.AlertWorker
 import tech.morgado.nexttram.notifications.LiveCountdownService
 import tech.morgado.nexttram.shared.Catching
 import tech.morgado.nexttram.shared.RouteStore
@@ -28,14 +30,30 @@ import java.util.concurrent.Executors
 /** Home-screen widget showing the next catchable tram, walk/run status, delay, and upcoming trams. */
 class NextTramWidgetProvider : AppWidgetProvider() {
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        AlertWorker.ensureScheduled(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        AlertWorker.ensureScheduled(context)
+    }
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        refreshWidgetsAsync(context)
+        val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        if (pm != null && !pm.isInteractive) return
+        val pending = goAsync()
+        refreshWidgetsAsync(context, forceRefresh = false) { pending.finish() }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         when (intent.action) {
-            ACTION_REFRESH -> refreshWidgetsAsync(context)
+            ACTION_REFRESH -> {
+                val pending = goAsync()
+                refreshWidgetsAsync(context, forceRefresh = true) { pending.finish() }
+            }
             ACTION_START_LIVE -> {
                 val routeId = intent.getStringExtra(AssistantRouter.EXTRA_ROUTE_ID)
                 val reversed = intent.getBooleanExtra(AssistantRouter.EXTRA_ROUTE_BACK, false)
@@ -49,27 +67,42 @@ class NextTramWidgetProvider : AppWidgetProvider() {
         const val ACTION_START_LIVE = "tech.morgado.nexttram.widget.ACTION_START_LIVE"
         private val executor = Executors.newSingleThreadExecutor()
 
-        fun refreshWidgetsAsync(context: Context) {
+        fun hasWidgets(context: Context): Boolean {
             val appCtx = context.applicationContext
             val mgr = AppWidgetManager.getInstance(appCtx)
-            val ids = mgr.getAppWidgetIds(ComponentName(appCtx, NextTramWidgetProvider::class.java))
-            if (ids.isEmpty()) return
+            return mgr.getAppWidgetIds(ComponentName(appCtx, NextTramWidgetProvider::class.java)).isNotEmpty()
+        }
+
+        fun refreshWidgetsAsync(
+            context: Context,
+            forceRefresh: Boolean = false,
+            onDone: (() -> Unit)? = null,
+        ) {
+            val appCtx = context.applicationContext
+            if (!hasWidgets(appCtx)) {
+                onDone?.invoke()
+                return
+            }
 
             executor.execute {
-                val store = RouteStore(appCtx)
-                val routes = store.getRoutes()
-                val match = if (store.locationAutoSwitch) {
-                    LocationHelper.pickNearestRoute(appCtx, routes)
-                } else {
-                    null
-                }
-                val route = match?.route ?: store.activeRoute()
-                val reversed = match?.reversed ?: false
                 try {
-                    val plan = TransitApi.fetchPlan(route, reversed)
-                    renderPlanToAllWidgets(appCtx, plan)
-                } catch (_: Exception) {
-                    renderErrorToAllWidgets(appCtx, route.displayName(reversed))
+                    val store = RouteStore(appCtx)
+                    val routes = store.getRoutes()
+                    val match = if (store.locationAutoSwitch) {
+                        LocationHelper.pickNearestRoute(appCtx, routes)
+                    } else {
+                        null
+                    }
+                    val route = match?.route ?: store.activeRoute()
+                    val reversed = match?.reversed ?: false
+                    try {
+                        val plan = TransitApi.fetchPlan(route, reversed, forceRefresh = forceRefresh)
+                        renderPlanToAllWidgets(appCtx, plan)
+                    } catch (_: Exception) {
+                        renderErrorToAllWidgets(appCtx, route.displayName(reversed))
+                    }
+                } finally {
+                    onDone?.invoke()
                 }
             }
         }

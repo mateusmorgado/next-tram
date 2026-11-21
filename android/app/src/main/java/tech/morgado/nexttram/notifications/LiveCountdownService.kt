@@ -254,7 +254,7 @@ class LiveCountdownService : Service() {
         const val EXTRA_REVERSED = "live_reversed"
         private const val NOTIF_ID = 4201
         private const val TICK_INTERVAL_MS = 10_000L
-        private const val REFRESH_INTERVAL_MS = 30_000L
+        private const val REFRESH_INTERVAL_MS = 60_000L
 
         fun start(context: Context, routeId: String? = null, reversed: Boolean = false) {
             val intent = Intent(context, LiveCountdownService::class.java).apply {

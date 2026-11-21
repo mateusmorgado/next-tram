@@ -200,6 +200,7 @@ class CompanionActivity : AppCompatActivity() {
                 }
             } else {
                 store.leaveNowEnabled = false
+                AlertWorker.ensureScheduled(this)
             }
         }
 
@@ -216,6 +217,7 @@ class CompanionActivity : AppCompatActivity() {
                 }
             } else {
                 store.delayAlertsEnabled = false
+                AlertWorker.ensureScheduled(this)
             }
         }
 
@@ -242,7 +244,7 @@ class CompanionActivity : AppCompatActivity() {
             store.autoUpdateEnabled,
         ) { checked ->
             store.autoUpdateEnabled = checked
-            if (checked) AlertWorker.ensureScheduled(this)
+            AlertWorker.ensureScheduled(this)
         }
         root.addView(featuresCard)
 

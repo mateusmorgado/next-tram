@@ -11,6 +11,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.Callable
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import kotlin.math.roundToInt
 
 /**
@@ -19,7 +22,16 @@ import kotlin.math.roundToInt
  */
 object TransitApi {
     private const val TIMEOUT_MS = 10_000
+    private const val CACHE_TTL_MS = 45_000L
     private const val USER_AGENT = "NextTram-Android/1.0 (https://app.nexttram.morgado.tech)"
+
+    private data class CachedDepartures(
+        val fetchedAtMs: Long,
+        val departures: List<Departure>,
+    )
+
+    private val planCache = ConcurrentHashMap<String, CachedDepartures>()
+    private val parallelPool = Executors.newFixedThreadPool(2)
 
     fun normalizeCode(raw: String?): String =
         (raw ?: "").lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
@@ -75,8 +87,16 @@ object TransitApi {
         )
     }
 
-    fun fetchPlan(route: Route, reversed: Boolean = false): TripPlan {
+    fun fetchPlan(route: Route, reversed: Boolean = false, forceRefresh: Boolean = false): TripPlan {
         val nowMs = System.currentTimeMillis()
+        val cacheKey = "${route.id}|$reversed"
+        if (!forceRefresh) {
+            val cached = planCache[cacheKey]
+            if (cached != null && (nowMs - cached.fetchedAtMs) < CACHE_TTL_MS) {
+                return Catching.planTrips(route, reversed, cached.departures, nowMs)
+            }
+        }
+
         val bufferMin = route.buffer / 60.0
         val all = mutableListOf<Departure>()
 
@@ -86,6 +106,22 @@ object TransitApi {
             val walkBase = route.destWalk ?: 0.0
             val walk = walkBase + bufferMin
             all += fetchPair(route.city, from, to, route.modes, walk, walkBase, route.noRun, anyPlatform = true)
+        } else if (route.stops.size > 1) {
+            // Query both home stops in parallel to cut latency in half.
+            val tasks = route.stops.map { origin ->
+                Callable {
+                    val walkBase = origin.walk
+                    val walk = walkBase + bufferMin
+                    fetchPair(route.city, origin.stop, route.dest, route.modes, walk, walkBase, route.noRun, anyPlatform = false)
+                }
+            }
+            val futures = parallelPool.invokeAll(tasks)
+            for (f in futures) {
+                try {
+                    all += f.get()
+                } catch (_: Exception) {
+                }
+            }
         } else {
             for (origin in route.stops) {
                 val walkBase = origin.walk
@@ -97,6 +133,10 @@ object TransitApi {
         val deduped = all
             .sortedBy { it.depMs }
             .distinctBy { it.tripKey }
+
+        if (deduped.isNotEmpty()) {
+            planCache[cacheKey] = CachedDepartures(nowMs, deduped)
+        }
 
         return Catching.planTrips(route, reversed, deduped, nowMs)
     }

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -29,16 +30,17 @@ import tech.morgado.nexttram.shared.TransitApi
 import tech.morgado.nexttram.updater.AppUpdater
 import tech.morgado.nexttram.widget.NextTramWidgetProvider
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
  * Background WorkManager worker powering:
- *  - "Leave now" / "Run!" notifications
+ *  - "Leave now" / "Run!" notifications (daytime 06:00-23:00 only)
  *  - Delay alerts (when the usual tram is >= 3 min late)
- *  - Home-screen widget & dynamic shortcuts refresh
- *  - Periodic GitHub android-latest auto-update checks
+ *  - Home-screen widget refresh (only when screen is on and a widget is placed)
+ *  - Periodic GitHub android-latest auto-update checks (throttled to every 6h)
  */
 class AlertWorker(
     appContext: Context,
@@ -47,36 +49,66 @@ class AlertWorker(
 
     override fun doWork(): Result {
         val store = RouteStore(applicationContext)
-        store.syncFromRemoteIfConfigured()
-        ShortcutsManager.refreshDynamicShortcuts(applicationContext)
+        val alertsOn = store.leaveNowEnabled || store.delayAlertsEnabled
+        val hasWidgets = NextTramWidgetProvider.hasWidgets(applicationContext)
 
-        val routes = store.getRoutes()
-        val match = if (store.locationAutoSwitch) {
-            LocationHelper.pickNearestRoute(applicationContext, routes)
-        } else {
-            null
-        }
-        val route = match?.route ?: store.activeRoute()
-        val reversed = match?.reversed ?: false
-
-        try {
-            val plan = TransitApi.fetchPlan(route, reversed)
-            NextTramWidgetProvider.renderPlanToAllWidgets(applicationContext, plan)
-
-            val hero = plan.hero
-            val nowMs = System.currentTimeMillis()
-            if (hero != null && canPostNotifications()) {
-                NotificationChannels.ensureCreated(applicationContext)
-
-                if (store.leaveNowEnabled) {
-                    maybeNotifyLeaveNow(store, route, reversed, hero, nowMs)
-                }
-                if (store.delayAlertsEnabled) {
-                    maybeNotifyDelay(store, route, reversed, hero)
-                }
+        if (!alertsOn && !hasWidgets) {
+            // No active transit features: only run throttled update check (every 6h) if enabled.
+            try {
+                AppUpdater.checkAndNotifyIfNeeded(applicationContext, force = false)
+            } catch (_: Exception) {
             }
-        } catch (_: Exception) {
-            // Network errors are retried on the next periodic window.
+            return Result.success()
+        }
+
+        val pm = applicationContext.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        val screenOn = pm?.isInteractive ?: true
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val isOvernight = hour < 6 || hour >= 23
+
+        // Never wake transit APIs while the phone is locked/asleep if only a widget is active,
+        // and skip overnight polling (23:00-06:00) to respect battery and Transitous fair-use limits.
+        val shouldFetchTransit = when {
+            isOvernight -> false
+            alertsOn -> true
+            hasWidgets && screenOn -> true
+            else -> false
+        }
+
+        if (shouldFetchTransit) {
+            store.syncFromRemoteIfConfigured()
+            ShortcutsManager.refreshDynamicShortcuts(applicationContext)
+
+            val routes = store.getRoutes()
+            val match = if (store.locationAutoSwitch) {
+                LocationHelper.pickNearestRoute(applicationContext, routes)
+            } else {
+                null
+            }
+            val route = match?.route ?: store.activeRoute()
+            val reversed = match?.reversed ?: false
+
+            try {
+                val plan = TransitApi.fetchPlan(route, reversed, forceRefresh = false)
+                if (hasWidgets) {
+                    NextTramWidgetProvider.renderPlanToAllWidgets(applicationContext, plan)
+                }
+
+                val hero = plan.hero
+                val nowMs = System.currentTimeMillis()
+                if (hero != null && alertsOn && canPostNotifications()) {
+                    NotificationChannels.ensureCreated(applicationContext)
+
+                    if (store.leaveNowEnabled) {
+                        maybeNotifyLeaveNow(store, route, reversed, hero, nowMs)
+                    }
+                    if (store.delayAlertsEnabled) {
+                        maybeNotifyDelay(store, route, reversed, hero)
+                    }
+                }
+            } catch (_: Exception) {
+                // Network errors are retried on the next periodic window.
+            }
         }
 
         try {
@@ -194,14 +226,23 @@ class AlertWorker(
         private const val NOTIF_ID_DELAY = 4302
 
         fun ensureScheduled(context: Context) {
+            val store = RouteStore(context)
+            val needed = store.leaveNowEnabled ||
+                store.delayAlertsEnabled ||
+                store.autoUpdateEnabled ||
+                NextTramWidgetProvider.hasWidgets(context)
+            val wm = WorkManager.getInstance(context.applicationContext)
+            if (!needed) {
+                wm.cancelUniqueWork(WORK_NAME)
+                return
+            }
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
             val req = PeriodicWorkRequestBuilder<AlertWorker>(15, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .build()
-            WorkManager.getInstance(context.applicationContext)
-                .enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, req)
+            wm.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, req)
         }
     }
 }
