@@ -40,9 +40,8 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.0'
-    // LauncherActivity is an AppCompatActivity and needs an AppCompat theme at runtime.
+    // 2.6.2 natively aligns with stable androidx.browser:browser:1.8.0 (2.6.0 pulled 1.9.0-alpha04).
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
     implementation 'androidx.appcompat:appcompat:1.7.0'
-    // androidbrowserhelper pulls an alpha of androidx.browser that needs a newer toolchain; pin the stable one.
-    implementation('androidx.browser:browser') { version { strictly '1.8.0' } }
+    implementation 'androidx.browser:browser:1.8.0'
 }
