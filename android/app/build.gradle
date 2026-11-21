@@ -1,7 +1,11 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
 
 // Signing comes from environment variables (GitHub secrets in CI); nothing secret lives in the repo.
 def ksFile = System.getenv('KEYSTORE_FILE')
+def gitSha = System.getenv('GIT_SHA') ?: 'dev'
 
 android {
     namespace 'tech.morgado.nexttram'
@@ -10,9 +14,14 @@ android {
     defaultConfig {
         applicationId 'tech.morgado.nexttram'
         minSdk 24
-        targetSdk 35
+        targetSdk 36
         versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '1')
         versionName(System.getenv('VERSION_NAME') ?: '1.0')
+        buildConfigField 'String', 'GIT_SHA', "\"${gitSha}\""
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     signingConfigs {
@@ -37,11 +46,18 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 dependencies {
+    implementation project(':shared')
     implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
     implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.work:work-runtime-ktx:2.10.0'
     // Upgrade androidbrowserhelper's transitive 1.9.0-alpha04 to stable 1.9.0.
     implementation 'androidx.browser:browser:1.9.0'
 }

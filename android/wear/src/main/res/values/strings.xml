@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="watch_app_name">NextTram</string>
+    <string name="watch_tile_label">NextTram</string>
+    <string name="watch_tile_description">Live departure countdown for your next tram.</string>
+</resources>

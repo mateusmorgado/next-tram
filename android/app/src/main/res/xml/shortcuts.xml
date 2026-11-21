@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="shortcut_home"
+        android:enabled="true"
+        android:icon="@drawable/ic_tram_notif"
+        android:shortcutShortLabel="@string/shortcut_home_short"
+        android:shortcutLongLabel="@string/shortcut_home_long">
+        <intent
+            android:action="tech.morgado.nexttram.ACTION_SHORTCUT"
+            android:targetPackage="tech.morgado.nexttram"
+            android:targetClass="tech.morgado.nexttram.LauncherActivity">
+            <extra android:name="assistant_feature" android:value="home"/>
+        </intent>
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding android:key="feature" android:value="home"/>
+        </capability-binding>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_back"
+        android:enabled="true"
+        android:icon="@drawable/ic_tram_notif"
+        android:shortcutShortLabel="@string/shortcut_back_short"
+        android:shortcutLongLabel="@string/shortcut_back_long">
+        <intent
+            android:action="tech.morgado.nexttram.ACTION_SHORTCUT"
+            android:targetPackage="tech.morgado.nexttram"
+            android:targetClass="tech.morgado.nexttram.LauncherActivity">
+            <extra android:name="assistant_feature" android:value="back"/>
+            <extra android:name="route_back" android:value="true"/>
+        </intent>
+        <capability-binding android:key="actions.intent.OPEN_APP_FEATURE">
+            <parameter-binding android:key="feature" android:value="back home"/>
+        </capability-binding>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="shortcut_settings"
+        android:enabled="true"
+        android:icon="@drawable/ic_settings"
+        android:shortcutShortLabel="@string/shortcut_settings_short"
+        android:shortcutLongLabel="@string/shortcut_settings_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="tech.morgado.nexttram"
+            android:targetClass="tech.morgado.nexttram.CompanionActivity"/>
+    </shortcut>
+
+    <!-- Google Assistant / Gemini App Actions: "next tram home", "next tram work", "next tram back" -->
+    <capability android:name="actions.intent.OPEN_APP_FEATURE">
+        <intent
+            android:action="tech.morgado.nexttram.ACTION_ASSISTANT"
+            android:targetPackage="tech.morgado.nexttram"
+            android:targetClass="tech.morgado.nexttram.LauncherActivity">
+            <parameter
+                android:name="feature"
+                android:key="assistant_feature"/>
+        </intent>
+    </capability>
+</shortcuts>

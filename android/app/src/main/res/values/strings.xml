@@ -3,4 +3,16 @@
     <string name="app_name">NextTram</string>
     <string name="launcher_name">NextTram</string>
     <string name="asset_statements" translatable="false">[{\"relation\": [\"delegate_permission/common.handle_all_urls\"], \"target\": {\"namespace\": \"web\", \"site\": \"https://app.nexttram.morgado.tech\"}}]</string>
+    <string name="widget_description">Next trams and leave-now countdown for your favourite stop.</string>
+    <string name="widget_refresh">Refresh departures</string>
+    <string name="widget_settings">NextTram settings</string>
+    <string name="widget_track_live">Start live lock-screen countdown</string>
+    <string name="qs_tile_label">NextTram</string>
+    <string name="shortcut_home_short">Next tram</string>
+    <string name="shortcut_home_long">Next tram from Home</string>
+    <string name="shortcut_back_short">Way home</string>
+    <string name="shortcut_back_long">Next tram back home</string>
+    <string name="shortcut_settings_short">Alerts &amp; sync</string>
+    <string name="shortcut_settings_long">NextTram alerts, widget &amp; sync</string>
+    <string name="companion_title">NextTram Control Center</string>
 </resources>

@@ -37,23 +37,28 @@ jobs:
             echo "KEY_ALIAS=nexttram" >> "$GITHUB_ENV"
           fi
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-      - name: Build APK
+      - name: Build APKs (Phone + Wear OS)
         working-directory: android
         env:
           VERSION_CODE: ${{ github.run_number }}
           VERSION_NAME: 1.0.${{ github.run_number }}
-        run: gradle --no-daemon assembleRelease
-      - name: Name the APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk NextTram.apk
+          GIT_SHA: ${{ github.sha }}
+        run: gradle --no-daemon :app:assembleRelease :wear:assembleRelease
+      - name: Name the APKs
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk NextTram.apk
+          cp android/wear/build/outputs/apk/release/wear-release.apk NextTram-wear.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: NextTram-apk
-          path: NextTram.apk
-      - name: Publish release (stable download link)
+          name: NextTram-apks
+          path: |
+            NextTram.apk
+            NextTram-wear.apk
+      - name: Publish release (stable download links)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete android-latest --yes --cleanup-tag || true
-          gh release create android-latest NextTram.apk --target "$GITHUB_SHA" \
-            --title "NextTram for Android" \
-            --notes "Download NextTram.apk on your Android phone and install it. Built from $GITHUB_SHA."
+          gh release create android-latest NextTram.apk NextTram-wear.apk --target "$GITHUB_SHA" \
+            --title "NextTram for Android & Wear OS" \
+            --notes "Download NextTram.apk on your Android phone (or NextTram-wear.apk on your Wear OS watch) and install it. Built from $GITHUB_SHA."

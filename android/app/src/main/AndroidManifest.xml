@@ -2,6 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <!-- Required on Android 11+ (API 30+) so TwaProviderPicker can discover browsers and bind CustomTabsService. -->
     <queries>
@@ -30,6 +39,7 @@
 
         <meta-data android:name="asset_statements" android:resource="@string/asset_statements"/>
 
+        <!-- Primary TWA Launcher + Shortcuts + Google Assistant / Gemini App Actions -->
         <activity
             android:name=".LauncherActivity"
             android:alwaysRetainTaskState="true"
@@ -47,6 +57,8 @@
                 android:resource="@color/colorPrimary"/>
             <meta-data android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
                 android:value="webview"/>
+            <meta-data android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts"/>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
@@ -57,8 +69,26 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="app.nexttram.morgado.tech"/>
             </intent-filter>
+            <intent-filter>
+                <action android:name="tech.morgado.nexttram.ACTION_SHORTCUT"/>
+                <action android:name="tech.morgado.nexttram.ACTION_ASSISTANT"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
         </activity>
 
+        <!-- Native Control Center: Favorites sync, alerts, location, live tracker, auto-updates -->
+        <activity
+            android:name=".CompanionActivity"
+            android:exported="true"
+            android:label="@string/companion_title"
+            android:theme="@style/Theme.NextTram">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+
+        <!-- TWA Support Activities & Delegation Service -->
         <activity
             android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
             android:configChanges="orientation|screenSize"
@@ -85,5 +115,62 @@
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
         </service>
+
+        <!-- Lock-screen Live Updates countdown service -->
+        <service
+            android:name=".notifications.LiveCountdownService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"/>
+
+        <!-- Quick Settings Tile -->
+        <service
+            android:name=".tile.NextTramTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tram_notif"
+            android:label="@string/qs_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="false"/>
+        </service>
+
+        <!-- Home-screen Widget -->
+        <receiver
+            android:name=".widget.NextTramWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+                <action android:name="tech.morgado.nexttram.widget.ACTION_REFRESH"/>
+                <action android:name="tech.morgado.nexttram.widget.ACTION_START_LIVE"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/next_tram_widget_info"/>
+        </receiver>
+
+        <!-- Restore background alerts, shortcuts & widget on reboot / app update -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+
+        <!-- FileProvider for self-updating NextTram.apk -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
     </application>
 </manifest>
