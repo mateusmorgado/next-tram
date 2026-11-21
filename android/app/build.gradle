@@ -5,7 +5,7 @@ def ksFile = System.getenv('KEYSTORE_FILE')
 
 android {
     namespace 'tech.morgado.nexttram'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId 'tech.morgado.nexttram'
@@ -40,8 +40,8 @@ android {
 }
 
 dependencies {
-    // 2.6.2 natively aligns with stable androidx.browser:browser:1.8.0 (2.6.0 pulled 1.9.0-alpha04).
     implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
     implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation 'androidx.browser:browser:1.8.0'
+    // Upgrade androidbrowserhelper's transitive 1.9.0-alpha04 to stable 1.9.0.
+    implementation 'androidx.browser:browser:1.9.0'
 }
