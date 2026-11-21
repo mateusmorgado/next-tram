@@ -55,6 +55,34 @@ To install it on Android it must be served over HTTPS. It is deployed on **Verce
 
 **Watch:** on screens 380 px wide or less (Wear OS browsers) the app switches to a round, glanceable layout automatically. Tap the route name to cycle favorites, tap the countdown to refresh. The ⌚ button previews it on a phone or desktop.
 
+## Android & Wear OS apps
+
+Prebuilt APKs are published automatically on the [`android-latest`](https://github.com/mateusmorgado/next-tram/releases/tag/android-latest) release:
+
+- **Phone (`NextTram.apk`):** Trusted Web Activity wrapper around the live PWA plus a home-screen widget, “Leave now” & delay notifications, lock-screen Live Updates countdown (Android 16 `ProgressStyle` / fallback on Android 7–15), Quick Settings tile, long-press app shortcuts, location-aware stop switching, Google Assistant / Gemini App Actions, and an in-app updater. Download and install directly on your phone, then long-press the app icon → **Alerts & sync** to paste your sync code and enable alerts.
+- **Wear OS watch (`NextTram-wear.apk`):** Standalone watch app + native Wear OS departure countdown tile.
+
+### Installing `NextTram-wear.apk` on a Wear OS watch
+
+Wear OS doesn't have a built-in browser APK installer, so sideload it over Wi-Fi using **Wireless debugging** (keep your watch and phone/PC on the same Wi-Fi):
+
+1. **Enable Wireless debugging on the watch:**
+   - Open **Settings → About watch → Software information** and tap **Software version** 7 times until Developer mode is enabled.
+   - Go to **Settings → Developer options** and turn on **ADB debugging** and **Wireless debugging** (tap **Wireless debugging** to see the `IP:port` and **Pair new device**).
+2. **Send the APK to the watch:**
+   - **From your Android phone (no PC needed):** Download [`NextTram-wear.apk`](https://github.com/mateusmorgado/next-tram/releases/download/android-latest/NextTram-wear.apk) on your phone, install **Wear Installer 2** (or **Bugjaeger**) from the Play Store, pick `NextTram-wear.apk` in the **Custom APK** tab, enter the watch's Wireless debugging IP/port and pairing code, and tap **Install**.
+   - **From a PC (ADB):**
+     ```bash
+     adb pair <watch-ip>:<pair-port>     # enter the 6-digit pairing code
+     adb connect <watch-ip>:<connect-port>
+     adb install NextTram-wear.apk
+     ```
+     *(Use the pairing port from **Pair new device** for `adb pair`, and the main Wireless debugging port for `adb connect`.)*
+3. **Finish setup on the watch:**
+   - Turn **Wireless debugging** back off on the watch to save battery.
+   - Open **NextTram** on the watch to enter your sync code (optional).
+   - Swipe on the watch face → **+ Add tile** (or in the **Galaxy Wearable** app on your phone → **Tiles**) and add **NextTram**.
+
 ## Favorites
 
 Three routes are built in (see [`src/data/stops.ts`](src/data/stops.ts)):
@@ -130,6 +158,7 @@ Google shut down custom voice actions (Conversational Actions) in 2023, so a Goo
 | `src/sync/` | Favorites online under your code; call counts |
 | `api/` | Vercel functions: MCP, Alexa, Siri (`say`), favorites |
 | `public/` | `index.html`, CSS, service worker, manifest, icons, privacy policy: copied into `dist/` |
+| `android/` | Native Android (`:app`), Wear OS (`:wear`), and shared Kotlin transit (`:shared`) Gradle modules |
 | `scripts/` | `build.ts` (esbuild bundle and offline file list) and `serve.ts` (local server) |
 | `mcp-server.mjs` | Starts the local MCP server over stdio |
 | `alexa/`, `docs/alexa-skill.md` | Alexa voice models and the publishing guide |
